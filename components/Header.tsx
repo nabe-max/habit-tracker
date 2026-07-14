@@ -9,10 +9,10 @@ export function Header() {
         </div>
         <div>
           <h1 className="text-lg font-semibold tracking-tight sm:text-xl">
-            習慣トラッカー
+            副業習慣トラッカー
           </h1>
           <p className="text-sm text-muted-foreground">
-            毎日の習慣を記録して、続ける力を育てましょう
+            本業後の1時間を、習慣にする。
           </p>
         </div>
       </div>

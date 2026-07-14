@@ -43,9 +43,9 @@ export default function HomePage() {
 
             <section className="space-y-4">
               <div>
-                <h2 className="text-base font-semibold">今日の習慣</h2>
+                <h2 className="text-base font-semibold">今日の副業習慣</h2>
                 <p className="text-sm text-muted-foreground">
-                  丸いボタンを押すと、今日の達成記録が付きます
+                  本業後の1時間、今日も達成したらチェック
                 </p>
               </div>
 
@@ -54,9 +54,9 @@ export default function HomePage() {
                   <div className="mx-auto flex size-12 items-center justify-center rounded-full bg-primary/10 text-primary">
                     <Target className="size-6" />
                   </div>
-                  <p className="mt-4 font-medium">まだ習慣がありません</p>
+                  <p className="mt-4 font-medium">まだ副業習慣がありません</p>
                   <p className="mt-1 text-sm text-muted-foreground">
-                    上のフォームから、最初の習慣を追加してみましょう
+                    「副業1時間」など、最初の習慣を追加してみましょう
                   </p>
                 </div>
               ) : (

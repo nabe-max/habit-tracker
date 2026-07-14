@@ -45,9 +45,9 @@ export function AddHabitForm({ onAdd, disabled }: AddHabitFormProps) {
       className="space-y-4 rounded-xl border bg-card p-6 shadow-sm"
     >
       <div>
-        <h2 className="text-base font-semibold">新しい習慣を追加</h2>
+        <h2 className="text-base font-semibold">新しい副業習慣を追加</h2>
         <p className="mt-1 text-sm text-muted-foreground">
-          毎日続けたいことを登録しましょう
+          毎日続けたい副業習慣を登録しましょう
         </p>
       </div>
 
@@ -58,7 +58,7 @@ export function AddHabitForm({ onAdd, disabled }: AddHabitFormProps) {
           </label>
           <Input
             id="habit-name"
-            placeholder="例: 朝ランニング、英語15分"
+            placeholder="例: 副業1時間、学習30分、X投稿1本"
             value={name}
             onChange={(event) => setName(event.target.value)}
             maxLength={HABIT_NAME_MAX_LENGTH}

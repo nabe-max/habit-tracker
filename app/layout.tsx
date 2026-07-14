@@ -16,9 +16,9 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "習慣トラッカー",
+  title: "副業習慣トラッカー | 本業後の1時間を、習慣にする。",
   description:
-    "毎日の習慣を記録して、ストリークを可視化するWebアプリ。完全無料・API不要。",
+    "副業を目指す会社員のための習慣トラッカー。本業後の1時間を習慣化し、ストリークで続ける仕組みを。完全無料。",
 };
 
 export default function RootLayout({

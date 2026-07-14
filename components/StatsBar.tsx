@@ -11,7 +11,7 @@ interface StatsBarProps {
 export function StatsBar({ total, completedToday, bestStreak }: StatsBarProps) {
   const items = [
     {
-      label: "登録した習慣",
+      label: "登録した副業習慣",
       value: `${total}件`,
       icon: Target,
     },
