@@ -4,7 +4,9 @@ import type { GenerateRequest, GenerateResponseItem } from "@/types/post";
 import {
   TARGETS,
   TONES,
-  COUNTS,
+  COUNT_MIN,
+  COUNT_MAX,
+  isValidCount,
   THEME_MAX_LENGTH,
   PAST_POSTS_MAX_LENGTH,
 } from "@/types/post";
@@ -22,8 +24,8 @@ function validate(body: GenerateRequest): string | null {
   if (!TONES.includes(body.tone as (typeof TONES)[number])) {
     return "トーンが不正です";
   }
-  if (!COUNTS.includes(body.count as (typeof COUNTS)[number])) {
-    return "生成数が不正です";
+  if (!isValidCount(body.count)) {
+    return `生成数は${COUNT_MIN}〜${COUNT_MAX}の整数で指定してください`;
   }
   if (body.pastPosts && body.pastPosts.length > PAST_POSTS_MAX_LENGTH) {
     return `過去投稿は${PAST_POSTS_MAX_LENGTH}文字以内です`;

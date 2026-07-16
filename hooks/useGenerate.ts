@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useCallback } from "react";
+import { GA_EVENTS, trackEvent } from "@/lib/analytics";
 import type { PostIdea, GenerateRequest } from "@/types/post";
 
 interface UseGenerateReturn {
@@ -19,6 +20,11 @@ export function useGenerate(): UseGenerateReturn {
   const generate = useCallback(async (params: GenerateRequest) => {
     setIsLoading(true);
     setError(null);
+
+    trackEvent(GA_EVENTS.SNS_GENERATE_START, {
+      count: params.count,
+      has_past_posts: Boolean(params.pastPosts),
+    });
 
     try {
       const res = await fetch("/api/generate", {
@@ -44,11 +50,18 @@ export function useGenerate(): UseGenerateReturn {
       }));
 
       setPosts(ideas);
+      trackEvent(GA_EVENTS.SNS_GENERATE_SUCCESS, {
+        count: params.count,
+        result_count: ideas.length,
+      });
     } catch (err) {
+      const message =
+        err instanceof Error ? err.message : "通信エラーが発生しました";
       setPosts([]);
-      setError(
-        err instanceof Error ? err.message : "通信エラーが発生しました",
-      );
+      setError(message);
+      trackEvent(GA_EVENTS.SNS_GENERATE_ERROR, {
+        error_message: message.slice(0, 100),
+      });
     } finally {
       setIsLoading(false);
     }

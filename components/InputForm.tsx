@@ -13,11 +13,13 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import type { GenerateRequest, Target, Tone, Count } from "@/types/post";
+import type { GenerateRequest, Target, Tone } from "@/types/post";
 import {
   TARGETS,
   TONES,
-  COUNTS,
+  COUNT_MIN,
+  COUNT_MAX,
+  isValidCount,
   THEME_MAX_LENGTH,
   PAST_POSTS_MAX_LENGTH,
 } from "@/types/post";
@@ -31,7 +33,7 @@ export function InputForm({ onSubmit, isLoading }: InputFormProps) {
   const [theme, setTheme] = useState("");
   const [target, setTarget] = useState<Target | "">("");
   const [tone, setTone] = useState<Tone | "">("");
-  const [count, setCount] = useState<Count>(20);
+  const [count, setCount] = useState(20);
   const [pastPosts, setPastPosts] = useState("");
   const [validationError, setValidationError] = useState<string | null>(null);
 
@@ -42,6 +44,9 @@ export function InputForm({ onSubmit, isLoading }: InputFormProps) {
     }
     if (!target) return "ターゲットは必須です";
     if (!tone) return "トーンは必須です";
+    if (!isValidCount(count)) {
+      return `生成数は${COUNT_MIN}〜${COUNT_MAX}の整数で入力してください`;
+    }
     if (pastPosts.length > PAST_POSTS_MAX_LENGTH) {
       return `過去投稿は${PAST_POSTS_MAX_LENGTH}文字以内で入力してください`;
     }
@@ -137,22 +142,22 @@ export function InputForm({ onSubmit, isLoading }: InputFormProps) {
           <label htmlFor="count" className="text-sm font-medium">
             生成数
           </label>
-          <Select
-            value={String(count)}
-            onValueChange={(v) => setCount(Number(v) as Count)}
+          <Input
+            id="count"
+            type="number"
+            min={COUNT_MIN}
+            max={COUNT_MAX}
+            step={1}
+            value={count}
+            onChange={(e) => {
+              const next = e.target.valueAsNumber;
+              if (!Number.isNaN(next)) setCount(next);
+            }}
             disabled={isLoading}
-          >
-            <SelectTrigger id="count" className="w-full">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {COUNTS.map((c) => (
-                <SelectItem key={c} value={String(c)}>
-                  {c}件
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          />
+          <p className="text-xs text-muted-foreground">
+            {COUNT_MIN}〜{COUNT_MAX}件
+          </p>
         </div>
       </div>
 

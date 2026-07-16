@@ -12,6 +12,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { GA_EVENTS, trackEvent } from "@/lib/analytics";
 import type { PostIdea } from "@/types/post";
 import { copyToClipboard, formatPostForCopy } from "@/utils/clipboard";
 import { isPostSaved, savePost } from "@/utils/storage";
@@ -31,6 +32,7 @@ export function PostCard({ post }: PostCardProps) {
     const success = await copyToClipboard(formatPostForCopy(post));
     if (success) {
       toast.success("Copied!");
+      trackEvent(GA_EVENTS.POST_COPY);
     } else {
       toast.error("コピーに失敗しました");
     }

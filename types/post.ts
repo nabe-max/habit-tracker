@@ -36,11 +36,15 @@ export const TONES = [
   "プロフェッショナル",
 ] as const;
 
-export const COUNTS = [10, 20, 30] as const;
+export const COUNT_MIN = 1;
+export const COUNT_MAX = 30;
 
 export type Target = (typeof TARGETS)[number];
 export type Tone = (typeof TONES)[number];
-export type Count = (typeof COUNTS)[number];
+
+export function isValidCount(count: number): boolean {
+  return Number.isInteger(count) && count >= COUNT_MIN && count <= COUNT_MAX;
+}
 
 export const THEME_MAX_LENGTH = 50;
 export const PAST_POSTS_MAX_LENGTH = 3000;

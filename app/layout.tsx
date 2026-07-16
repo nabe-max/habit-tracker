@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 
+import { GoogleAnalytics } from "@/components/GoogleAnalytics";
 import { Toaster } from "@/components/ui/sonner";
 
 import "./globals.css";
@@ -16,9 +17,9 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "副業習慣トラッカー | 本業後の1時間を、習慣にする。",
+  title: "企業研究AI | 就活生のための企業分析ツール",
   description:
-    "副業を目指す会社員のための習慣トラッカー。本業後の1時間を習慣化し、ストリークで続ける仕組みを。完全無料。",
+    "会社名と公式サイトURLを入力するだけで、事業内容・強み・就活ポイント・志望動機のたたき台をAIが自動生成。",
 };
 
 export default function RootLayout({
@@ -33,6 +34,7 @@ export default function RootLayout({
       >
         {children}
         <Toaster position="top-center" richColors />
+        <GoogleAnalytics />
       </body>
     </html>
   );
