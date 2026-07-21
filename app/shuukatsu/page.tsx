@@ -20,7 +20,14 @@ function AnalysisSkeleton() {
 }
 
 export default function ShuukatsuPage() {
-  const { analysis, isLoading, error, analyze } = useShuukatsuAnalyze();
+  const {
+    analysis,
+    isLoading,
+    error,
+    usage,
+    isLimitReached,
+    analyze,
+  } = useShuukatsuAnalyze();
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-sky-50 via-white to-amber-50">
@@ -30,6 +37,8 @@ export default function ShuukatsuPage() {
 
         <CompanyInputForm
           isLoading={isLoading}
+          isLimitReached={isLimitReached}
+          usage={usage}
           onSubmit={(companyName, url, keywords) =>
             analyze(companyName, url, keywords)
           }

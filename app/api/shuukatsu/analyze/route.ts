@@ -1,10 +1,20 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getOpenAIClient } from "@/lib/openai";
+import { cookies } from "next/headers";
+import { getOpenAIClient, formatOpenAIError } from "@/lib/openai";
 import {
   SHUUKATSU_SYSTEM_PROMPT,
   buildCompanyAnalysisPrompt,
   type AiCompanyAnalysisResult,
 } from "@/lib/shuukatsu-ai";
+import {
+  SHUUKATSU_USAGE_COOKIE,
+  SHUUKATSU_USAGE_LIMIT_MESSAGE,
+  getCurrentMonthKey,
+  isShuukatsuUsageLimitReached,
+  parseShuukatsuUsage,
+  serializeShuukatsuUsage,
+  summarizeShuukatsuUsage,
+} from "@/lib/shuukatsuUsage";
 import { fetchAndAnalyzeSite, normalizeUrl } from "@/lib/siteAnalyzer";
 import type { AnalyzeCompanyRequest, CompanyAnalysis } from "@/types/shuukatsu";
 
@@ -34,6 +44,20 @@ export async function POST(req: NextRequest) {
       return NextResponse.json(
         { error: "公式サイトURLを入力してください" },
         { status: 400 },
+      );
+    }
+
+    const cookieStore = await cookies();
+    const currentUsage = parseShuukatsuUsage(
+      cookieStore.get(SHUUKATSU_USAGE_COOKIE)?.value,
+    );
+    if (isShuukatsuUsageLimitReached(currentUsage)) {
+      return NextResponse.json(
+        {
+          error: SHUUKATSU_USAGE_LIMIT_MESSAGE,
+          usage: summarizeShuukatsuUsage(currentUsage),
+        },
+        { status: 429 },
       );
     }
 
@@ -106,11 +130,27 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    return NextResponse.json(result);
+    const nextUsage = {
+      month: getCurrentMonthKey(),
+      count: currentUsage.count + 1,
+    };
+    cookieStore.set(SHUUKATSU_USAGE_COOKIE, serializeShuukatsuUsage(nextUsage), {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "lax",
+      maxAge: 60 * 60 * 24 * 32,
+      path: "/",
+    });
+
+    return NextResponse.json({
+      ...result,
+      usage: summarizeShuukatsuUsage(nextUsage),
+    });
   } catch (error) {
     console.error("[POST /api/shuukatsu/analyze]", error);
-    const message =
-      error instanceof Error ? error.message : "予期しないエラーが発生しました";
-    return NextResponse.json({ error: message }, { status: 500 });
+    return NextResponse.json(
+      { error: formatOpenAIError(error) },
+      { status: 500 },
+    );
   }
 }

@@ -40,6 +40,9 @@ export function HeroSection() {
           </h2>
           <p className="max-w-2xl text-sm leading-relaxed text-slate-600 sm:text-base">
             事業内容・強み・就活ポイント・面接のヒント・志望動機のたたき台まで、AIがまとめてくれます。
+            <span className="mt-1 block text-sky-700">
+              無料プラン：月3回まで利用できます。
+            </span>
           </p>
         </div>
 

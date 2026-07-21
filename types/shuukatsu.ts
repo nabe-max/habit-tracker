@@ -4,6 +4,13 @@ export interface AnalyzeCompanyRequest {
   keywords?: string;
 }
 
+export interface ShuukatsuUsageSummary {
+  limit: number;
+  used: number;
+  remaining: number;
+  month: string;
+}
+
 export interface CompanyAnalysis {
   companyName: string;
   url: string;

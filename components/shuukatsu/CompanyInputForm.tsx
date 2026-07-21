@@ -14,11 +14,15 @@ import {
 
 interface CompanyInputFormProps {
   isLoading: boolean;
+  isLimitReached: boolean;
+  usage: { remaining: number; limit: number } | null;
   onSubmit: (companyName: string, url: string, keywords?: string) => void;
 }
 
 export function CompanyInputForm({
   isLoading,
+  isLimitReached,
+  usage,
   onSubmit,
 }: CompanyInputFormProps) {
   function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
@@ -41,6 +45,11 @@ export function CompanyInputForm({
             <CardTitle className="text-slate-800">企業を入力</CardTitle>
             <CardDescription className="text-slate-500">
               会社名と公式サイトURLを入れると、AIが企業研究を自動でまとめます
+              {usage && (
+                <span className="mt-1 block font-medium text-sky-700">
+                  今月の無料利用：残り {usage.remaining} / {usage.limit} 回
+                </span>
+              )}
             </CardDescription>
           </div>
         </div>
@@ -57,7 +66,7 @@ export function CompanyInputForm({
               type="text"
               placeholder="例: 株式会社サイバーエージェント"
               required
-              disabled={isLoading}
+              disabled={isLoading || isLimitReached}
               className="border-sky-100 bg-sky-50/30 focus-visible:ring-sky-300"
             />
           </div>
@@ -71,7 +80,7 @@ export function CompanyInputForm({
               type="text"
               placeholder="https://www.example.co.jp"
               required
-              disabled={isLoading}
+              disabled={isLoading || isLimitReached}
               className="border-sky-100 bg-sky-50/30 focus-visible:ring-sky-300"
             />
             <p className="text-xs text-slate-500">
@@ -88,16 +97,21 @@ export function CompanyInputForm({
               name="keywords"
               type="text"
               placeholder="例: 福利厚生, リモートワーク, 新卒採用"
-              disabled={isLoading}
+              disabled={isLoading || isLimitReached}
               className="border-violet-100 bg-white focus-visible:ring-violet-300"
             />
             <p className="text-xs text-slate-500">
               気になるキーワードを入れると、その企業の関連情報もまとめて表示します
             </p>
           </div>
+          {isLimitReached && (
+            <p className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800">
+              今月の無料利用回数（3回）に達しました。来月1日（日本時間）にリセットされます。
+            </p>
+          )}
           <Button
             type="submit"
-            disabled={isLoading}
+            disabled={isLoading || isLimitReached}
             className="w-full bg-gradient-to-r from-sky-500 to-cyan-500 text-white shadow-md shadow-sky-200 hover:from-sky-600 hover:to-cyan-600 sm:w-auto"
           >
             {isLoading ? (

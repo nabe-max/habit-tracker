@@ -13,20 +13,41 @@ type GtagEventParams = Record<string, string | number | boolean | undefined>;
 
 declare global {
   interface Window {
-    gtag?: (
-      command: "event" | "config" | "js",
-      targetId: string | Date,
-      params?: GtagEventParams,
-    ) => void;
+    dataLayer?: Array<Record<string, unknown>>;
+    gtag?: (...args: unknown[]) => void;
   }
+}
+
+function normalizeParams(
+  params?: GtagEventParams,
+): Record<string, string | number> {
+  if (!params) return {};
+
+  return Object.fromEntries(
+    Object.entries(params)
+      .filter(([, value]) => value !== undefined)
+      .map(([key, value]) => [
+        key,
+        typeof value === "boolean" ? String(value) : value!,
+      ]),
+  );
 }
 
 export function trackEvent(
   eventName: string,
   params?: GtagEventParams,
 ): void {
-  if (typeof window === "undefined" || !window.gtag) return;
-  if (!process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID) return;
+  if (typeof window === "undefined") return;
 
-  window.gtag("event", eventName, params);
+  const payload = normalizeParams(params);
+
+  window.dataLayer = window.dataLayer || [];
+  window.dataLayer.push({
+    event: eventName,
+    ...payload,
+  });
+
+  if (typeof window.gtag === "function") {
+    window.gtag("event", eventName, payload);
+  }
 }

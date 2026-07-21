@@ -1,13 +1,21 @@
 "use client";
 
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { GA_EVENTS, trackEvent } from "@/lib/analytics";
-import type { CompanyAnalysis } from "@/types/shuukatsu";
+import type { CompanyAnalysis, ShuukatsuUsageSummary } from "@/types/shuukatsu";
+
+interface AnalyzeResponse extends CompanyAnalysis {
+  error?: string;
+  usage?: ShuukatsuUsageSummary;
+}
 
 interface UseShuukatsuAnalyzeReturn {
   analysis: CompanyAnalysis | null;
   isLoading: boolean;
   error: string | null;
+  usage: ShuukatsuUsageSummary | null;
+  isUsageLoading: boolean;
+  isLimitReached: boolean;
   analyze: (companyName: string, url: string, keywords?: string) => Promise<void>;
   reset: () => void;
 }
@@ -16,6 +24,25 @@ export function useShuukatsuAnalyze(): UseShuukatsuAnalyzeReturn {
   const [analysis, setAnalysis] = useState<CompanyAnalysis | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [usage, setUsage] = useState<ShuukatsuUsageSummary | null>(null);
+  const [isUsageLoading, setIsUsageLoading] = useState(true);
+
+  const fetchUsage = useCallback(async () => {
+    try {
+      const res = await fetch("/api/shuukatsu/usage");
+      if (!res.ok) return;
+      const data = (await res.json()) as ShuukatsuUsageSummary;
+      setUsage(data);
+    } catch {
+      // ignore
+    } finally {
+      setIsUsageLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    void fetchUsage();
+  }, [fetchUsage]);
 
   const analyze = useCallback(async (companyName: string, url: string, keywords?: string) => {
     setIsLoading(true);
@@ -32,16 +59,23 @@ export function useShuukatsuAnalyze(): UseShuukatsuAnalyzeReturn {
         body: JSON.stringify({ companyName, url, keywords }),
       });
 
-      const data = (await res.json()) as CompanyAnalysis & { error?: string };
+      const data = (await res.json()) as AnalyzeResponse;
 
       if (!res.ok) {
+        if (data.usage) {
+          setUsage(data.usage);
+        }
         throw new Error(data.error ?? "分析に失敗しました");
       }
 
-      setAnalysis(data);
+      const { usage: nextUsage, ...analysisResult } = data;
+      if (nextUsage) {
+        setUsage(nextUsage);
+      }
+      setAnalysis(analysisResult);
       trackEvent(GA_EVENTS.COMPANY_ANALYSIS_SUCCESS, {
         has_keywords: Boolean(keywords),
-        has_keyword_results: Boolean(data.keywordInsights?.length),
+        has_keyword_results: Boolean(analysisResult.keywordInsights?.length),
       });
     } catch (err) {
       const message = err instanceof Error ? err.message : "分析に失敗しました";
@@ -60,5 +94,16 @@ export function useShuukatsuAnalyze(): UseShuukatsuAnalyzeReturn {
     setError(null);
   }, []);
 
-  return { analysis, isLoading, error, analyze, reset };
+  const isLimitReached = usage !== null && usage.remaining <= 0;
+
+  return {
+    analysis,
+    isLoading,
+    error,
+    usage,
+    isUsageLoading,
+    isLimitReached,
+    analyze,
+    reset,
+  };
 }
