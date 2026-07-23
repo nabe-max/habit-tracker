@@ -1,39 +1,47 @@
+import type { LocalizedList, LocalizedText } from "./locale";
+
+export interface OsakaPhrase {
+  en: string;
+  ja: string;
+  romaji: string;
+}
+
 export interface OsakaFaqItem {
   id: string;
-  category: string;
-  question: string;
-  steps: string[];
-  phrase?: { en: string; ja: string; romaji: string };
-  link?: { label: string; href: string };
+  category: LocalizedText;
+  question: LocalizedText;
+  steps: LocalizedList;
+  phrase?: OsakaPhrase;
+  link?: { label: LocalizedText; href: string };
 }
 
 export interface OsakaPrepItem {
   id: string;
-  title: string;
-  detail: string;
+  title: LocalizedText;
+  detail: LocalizedText;
 }
 
 export interface OsakaPlanSpot {
   time: string;
-  title: string;
-  description: string;
+  title: LocalizedText;
+  description: LocalizedText;
   mapsQuery: string;
-  tip?: string;
+  tip?: LocalizedText;
 }
 
 export interface OsakaPlanDay {
   day: number;
-  title: string;
-  summary: string;
-  headsUp: string;
-  phrase: { en: string; ja: string; romaji: string };
+  title: LocalizedText;
+  summary: LocalizedText;
+  headsUp: LocalizedText;
+  phrase: OsakaPhrase;
   spots: OsakaPlanSpot[];
 }
 
 export interface OsakaPlan {
   slug: string;
-  name: string;
-  tagline: string;
-  baseArea: string;
+  name: LocalizedText;
+  tagline: LocalizedText;
+  baseArea: LocalizedText;
   days: OsakaPlanDay[];
 }

@@ -3,13 +3,36 @@
 import { useState } from "react";
 import { ChevronDown, ExternalLink } from "lucide-react";
 
-import type { OsakaFaqItem } from "@/data/osaka/types";
+import { pickList, pickText } from "@/data/osaka/locale";
+import type { OsakaFaqItem, OsakaPhrase } from "@/data/osaka/types";
+
+import { useOsakaLocale } from "./OsakaLocaleProvider";
 
 interface HelpFaqListProps {
   items: OsakaFaqItem[];
 }
 
+function PhraseBlock({ phrase, locale }: { phrase: OsakaPhrase; locale: "en" | "ja" }) {
+  if (locale === "ja") {
+    return (
+      <div className="rounded-xl bg-slate-50 p-3 text-sm">
+        <p className="font-medium text-slate-800">{phrase.ja}</p>
+        <p className="text-slate-500">{phrase.romaji}</p>
+        <p className="mt-1 text-slate-600">{phrase.en}</p>
+      </div>
+    );
+  }
+  return (
+    <div className="rounded-xl bg-slate-50 p-3 text-sm">
+      <p className="font-medium text-slate-800">{phrase.en}</p>
+      <p className="mt-1 text-slate-700">{phrase.ja}</p>
+      <p className="text-slate-500">{phrase.romaji}</p>
+    </div>
+  );
+}
+
 export function HelpFaqList({ items }: HelpFaqListProps) {
+  const { locale } = useOsakaLocale();
   const [openId, setOpenId] = useState<string | null>(items[0]?.id ?? null);
 
   return (
@@ -28,10 +51,10 @@ export function HelpFaqList({ items }: HelpFaqListProps) {
             >
               <span>
                 <span className="text-xs font-medium uppercase tracking-wide text-orange-600">
-                  {item.category}
+                  {pickText(item.category, locale)}
                 </span>
                 <span className="mt-1 block font-medium text-slate-800">
-                  {item.question}
+                  {pickText(item.question, locale)}
                 </span>
               </span>
               <ChevronDown
@@ -43,17 +66,11 @@ export function HelpFaqList({ items }: HelpFaqListProps) {
             {isOpen && (
               <div className="space-y-3 border-t border-orange-50 px-4 pb-4 pt-3">
                 <ol className="list-decimal space-y-2 pl-4 text-sm text-slate-600">
-                  {item.steps.map((step) => (
+                  {pickList(item.steps, locale).map((step) => (
                     <li key={step}>{step}</li>
                   ))}
                 </ol>
-                {item.phrase && (
-                  <div className="rounded-xl bg-slate-50 p-3 text-sm">
-                    <p className="font-medium text-slate-800">{item.phrase.en}</p>
-                    <p className="mt-1 text-slate-700">{item.phrase.ja}</p>
-                    <p className="text-slate-500">{item.phrase.romaji}</p>
-                  </div>
-                )}
+                {item.phrase && <PhraseBlock phrase={item.phrase} locale={locale} />}
                 {item.link && (
                   <a
                     href={item.link.href}
@@ -61,7 +78,7 @@ export function HelpFaqList({ items }: HelpFaqListProps) {
                     rel="noopener noreferrer"
                     className="inline-flex items-center gap-1 text-sm font-medium text-orange-600 hover:underline"
                   >
-                    {item.link.label}
+                    {pickText(item.link.label, locale)}
                     <ExternalLink className="size-3.5" />
                   </a>
                 )}

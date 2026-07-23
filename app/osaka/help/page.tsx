@@ -1,21 +1,5 @@
-import { OsakaHeader } from "@/components/osaka/OsakaHeader";
-import { HelpFaqList } from "@/components/osaka/HelpFaqList";
-import { OSAKA_FAQ } from "@/data/osaka/faq";
+import { OsakaHelpPageContent } from "@/components/osaka/OsakaHelpPageContent";
 
 export default function OsakaHelpPage() {
-  return (
-    <div className="min-h-screen bg-gradient-to-br from-orange-50 via-white to-rose-50">
-      <OsakaHeader />
-      <main className="mx-auto max-w-3xl space-y-6 px-4 py-8 sm:px-6">
-        <div>
-          <h1 className="text-2xl font-bold text-slate-900">Stuck? Help</h1>
-          <p className="mt-2 text-slate-600">
-            Quick steps and phrases you can show staff. Not legal or medical
-            advice — when in doubt, ask your hotel or call 110/119.
-          </p>
-        </div>
-        <HelpFaqList items={OSAKA_FAQ} />
-      </main>
-    </div>
-  );
+  return <OsakaHelpPageContent />;
 }

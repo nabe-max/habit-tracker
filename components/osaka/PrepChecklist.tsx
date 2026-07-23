@@ -3,7 +3,10 @@
 import { useEffect, useState } from "react";
 import { Check } from "lucide-react";
 
+import { pickText, type OsakaLocale } from "@/data/osaka/locale";
 import type { OsakaPrepItem } from "@/data/osaka/types";
+
+import { useOsakaLocale } from "./OsakaLocaleProvider";
 
 const STORAGE_KEY = "osaka-prep-checked";
 
@@ -12,6 +15,7 @@ interface PrepChecklistProps {
 }
 
 export function PrepChecklist({ items }: PrepChecklistProps) {
+  const { locale } = useOsakaLocale();
   const [checked, setChecked] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
@@ -56,9 +60,11 @@ export function PrepChecklist({ items }: PrepChecklistProps) {
                 {isChecked ? <Check className="size-3.5" /> : null}
               </span>
               <span>
-                <span className="font-medium text-slate-800">{item.title}</span>
+                <span className="font-medium text-slate-800">
+                  {pickText(item.title, locale)}
+                </span>
                 <span className="mt-1 block text-sm leading-relaxed text-slate-600">
-                  {item.detail}
+                  {pickText(item.detail, locale)}
                 </span>
               </span>
             </button>
