@@ -2,6 +2,14 @@ import type { Album } from "@/types/album";
 
 const STORAGE_KEY = "photo-albums";
 
+export type ImageReadErrorCode = "not_image" | "too_large" | "read_failed";
+
+export class ImageReadError extends Error {
+  constructor(public code: ImageReadErrorCode) {
+    super(code);
+  }
+}
+
 export function getAlbums(): Album[] {
   if (typeof window === "undefined") return [];
 
@@ -31,16 +39,16 @@ export function deleteAlbum(id: string): void {
 export function readImageFile(file: File): Promise<string> {
   return new Promise((resolve, reject) => {
     if (!file.type.startsWith("image/")) {
-      reject(new Error("画像ファイルを選んでください"));
+      reject(new ImageReadError("not_image"));
       return;
     }
     if (file.size > 2 * 1024 * 1024) {
-      reject(new Error("1枚2MB以内にしてください（MVPは端末保存のため）"));
+      reject(new ImageReadError("too_large"));
       return;
     }
     const reader = new FileReader();
     reader.onload = () => resolve(String(reader.result));
-    reader.onerror = () => reject(new Error("画像の読み込みに失敗しました"));
+    reader.onerror = () => reject(new ImageReadError("read_failed"));
     reader.readAsDataURL(file);
   });
 }

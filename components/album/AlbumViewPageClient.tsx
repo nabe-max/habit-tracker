@@ -7,6 +7,7 @@ import { Pencil } from "lucide-react";
 
 import { AlbumBookViewer } from "@/components/album/AlbumBookViewer";
 import { AlbumHeader } from "@/components/album/AlbumHeader";
+import { useAlbumUi } from "@/components/album/AlbumLocaleProvider";
 import { Button } from "@/components/ui/button";
 import { getAlbum } from "@/lib/album/storage";
 import type { Album } from "@/types/album";
@@ -17,6 +18,7 @@ interface AlbumViewPageClientProps {
 
 export function AlbumViewPageClient({ id }: AlbumViewPageClientProps) {
   const router = useRouter();
+  const { t, ui } = useAlbumUi();
   const [album, setAlbum] = useState<Album | null>(null);
 
   useEffect(() => {
@@ -31,7 +33,7 @@ export function AlbumViewPageClient({ id }: AlbumViewPageClientProps) {
   if (!album) {
     return (
       <div className="flex min-h-screen items-center justify-center text-slate-500">
-        読み込み中...
+        {t(ui.edit.loading)}
       </div>
     );
   }
@@ -44,7 +46,7 @@ export function AlbumViewPageClient({ id }: AlbumViewPageClientProps) {
           <Button asChild size="sm" variant="outline">
             <Link href={`/album/${album.id}/edit`}>
               <Pencil className="size-4" />
-              編集
+              {t(ui.view.edit)}
             </Link>
           </Button>
         }

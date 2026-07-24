@@ -7,8 +7,11 @@ import { BookOpen, ChevronLeft, ChevronRight } from "lucide-react";
 import { AlbumPageSurface } from "@/components/album/AlbumPageSurface";
 import { FlipPage } from "@/components/album/FlipPage";
 import { Button } from "@/components/ui/button";
+import { interpolate } from "@/data/album/ui";
 import type { Album } from "@/types/album";
 import { ALBUM_PAGE_HEIGHT, ALBUM_PAGE_WIDTH } from "@/types/album";
+
+import { useAlbumUi } from "./AlbumLocaleProvider";
 
 interface AlbumBookViewerProps {
   album: Album;
@@ -22,6 +25,7 @@ type FlipBookRef = {
 };
 
 export function AlbumBookViewer({ album }: AlbumBookViewerProps) {
+  const { t, ui } = useAlbumUi();
   const bookRef = useRef<FlipBookRef>(null);
   const [page, setPage] = useState(0);
   const [scale, setScale] = useState(1);
@@ -82,7 +86,7 @@ export function AlbumBookViewer({ album }: AlbumBookViewerProps) {
             <div className="border-y-4 border-amber-800/20 px-8 text-center">
               <BookOpen className="mx-auto mb-4 size-10 text-amber-900/70" />
               <h2 className="text-2xl font-bold text-amber-950">{album.title}</h2>
-              <p className="mt-2 text-sm text-amber-900/70">タップまたはスワイプでめくる</p>
+              <p className="mt-2 text-sm text-amber-900/70">{t(ui.book.coverHint)}</p>
             </div>
           </FlipPage>
 
@@ -93,7 +97,7 @@ export function AlbumBookViewer({ album }: AlbumBookViewerProps) {
           ))}
 
           <FlipPage className="flex items-center justify-center bg-gradient-to-br from-orange-100 to-amber-50">
-            <p className="text-sm font-medium text-amber-900/60">— end —</p>
+            <p className="text-sm font-medium text-amber-900/60">{t(ui.book.end)}</p>
           </FlipPage>
         </HTMLFlipBook>
       </div>
@@ -101,13 +105,13 @@ export function AlbumBookViewer({ album }: AlbumBookViewerProps) {
       <div className="flex items-center gap-3">
         <Button type="button" variant="outline" size="sm" onClick={() => bookRef.current?.pageFlip().flipPrev()}>
           <ChevronLeft className="size-4" />
-          前へ
+          {t(ui.book.prev)}
         </Button>
         <span className="text-sm text-slate-600">
-          {page + 1} / {totalPages}
+          {interpolate(t(ui.book.pageOf), { current: page + 1, total: totalPages })}
         </span>
         <Button type="button" variant="outline" size="sm" onClick={() => bookRef.current?.pageFlip().flipNext()}>
-          次へ
+          {t(ui.book.next)}
           <ChevronRight className="size-4" />
         </Button>
       </div>

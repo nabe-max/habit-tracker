@@ -1,11 +1,13 @@
 import type { Metadata } from "next";
 
+import { AlbumLocaleProvider } from "@/components/album/AlbumLocaleProvider";
+
 export const metadata: Metadata = {
-  title: "Album Book | 写真を本のように残す",
+  title: "Album Book | Photo albums you can flip like a book",
   description:
-    "写真を自由な位置・大きさで配置し、本のようにめくって閲覧できるアルバムアプリ。",
+    "Place photos freely and flip through your album like a real book. English / 日本語.",
 };
 
 export default function AlbumLayout({ children }: { children: React.ReactNode }) {
-  return children;
+  return <AlbumLocaleProvider>{children}</AlbumLocaleProvider>;
 }

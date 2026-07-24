@@ -6,11 +6,15 @@ import { BookOpen, Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 
 import { AlbumHeader } from "@/components/album/AlbumHeader";
+import { useAlbumUi } from "@/components/album/AlbumLocaleProvider";
 import { Button } from "@/components/ui/button";
+import { formatPageCount } from "@/data/album/locale";
+import { interpolate } from "@/data/album/ui";
 import { deleteAlbum, getAlbums } from "@/lib/album/storage";
 import type { Album } from "@/types/album";
 
 export function AlbumBookshelf() {
+  const { locale, t, ui } = useAlbumUi();
   const [albums, setAlbums] = useState<Album[]>([]);
 
   useEffect(() => {
@@ -18,10 +22,11 @@ export function AlbumBookshelf() {
   }, []);
 
   function handleDelete(id: string, title: string) {
-    if (!confirm(`「${title}」を削除しますか？`)) return;
+    const message = interpolate(t(ui.shelf.deleteConfirm), { title });
+    if (!confirm(message)) return;
     deleteAlbum(id);
     setAlbums(getAlbums());
-    toast.success("アルバムを削除しました");
+    toast.success(t(ui.shelf.deleted));
   }
 
   return (
@@ -31,7 +36,7 @@ export function AlbumBookshelf() {
           <Button asChild className="bg-violet-600 hover:bg-violet-700">
             <Link href="/album/new">
               <Plus className="size-4" />
-              新しいアルバム
+              {t(ui.shelf.newAlbum)}
             </Link>
           </Button>
         }
@@ -41,13 +46,11 @@ export function AlbumBookshelf() {
           <div className="rounded-3xl border border-violet-100 bg-white/90 px-6 py-16 text-center shadow-sm">
             <BookOpen className="mx-auto size-12 text-violet-300" />
             <h2 className="mt-4 text-xl font-semibold text-slate-800">
-              本棚は空です
+              {t(ui.shelf.emptyTitle)}
             </h2>
-            <p className="mt-2 text-slate-600">
-              写真を自由に配置して、本のようにめくれるアルバムを作れます。
-            </p>
+            <p className="mt-2 text-slate-600">{t(ui.shelf.emptyDesc)}</p>
             <Button asChild className="mt-6 bg-violet-600 hover:bg-violet-700">
-              <Link href="/album/new">最初のアルバムを作る</Link>
+              <Link href="/album/new">{t(ui.shelf.createFirst)}</Link>
             </Button>
           </div>
         ) : (
@@ -61,13 +64,15 @@ export function AlbumBookshelf() {
                   <BookOpen className="size-10 text-violet-400" />
                 </div>
                 <h2 className="mt-3 font-semibold text-slate-800">{album.title}</h2>
-                <p className="text-sm text-slate-500">{album.pages.length} ページ</p>
+                <p className="text-sm text-slate-500">
+                  {formatPageCount(album.pages.length, locale)}
+                </p>
                 <div className="mt-3 flex flex-wrap gap-2">
                   <Button asChild size="sm" className="bg-violet-600 hover:bg-violet-700">
-                    <Link href={`/album/${album.id}/view`}>本を開く</Link>
+                    <Link href={`/album/${album.id}/view`}>{t(ui.shelf.openBook)}</Link>
                   </Button>
                   <Button asChild size="sm" variant="outline">
-                    <Link href={`/album/${album.id}/edit`}>編集</Link>
+                    <Link href={`/album/${album.id}/edit`}>{t(ui.shelf.edit)}</Link>
                   </Button>
                   <Button
                     type="button"

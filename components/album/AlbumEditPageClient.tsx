@@ -7,6 +7,7 @@ import { ArrowRight } from "lucide-react";
 
 import { AlbumEditor } from "@/components/album/AlbumEditor";
 import { AlbumHeader } from "@/components/album/AlbumHeader";
+import { useAlbumUi } from "@/components/album/AlbumLocaleProvider";
 import { Button } from "@/components/ui/button";
 import { getAlbum } from "@/lib/album/storage";
 import type { Album } from "@/types/album";
@@ -17,6 +18,7 @@ interface AlbumEditPageClientProps {
 
 export function AlbumEditPageClient({ id }: AlbumEditPageClientProps) {
   const router = useRouter();
+  const { t, ui } = useAlbumUi();
   const [album, setAlbum] = useState<Album | null>(null);
 
   useEffect(() => {
@@ -31,7 +33,7 @@ export function AlbumEditPageClient({ id }: AlbumEditPageClientProps) {
   if (!album) {
     return (
       <div className="flex min-h-screen items-center justify-center text-slate-500">
-        読み込み中...
+        {t(ui.edit.loading)}
       </div>
     );
   }
@@ -43,7 +45,7 @@ export function AlbumEditPageClient({ id }: AlbumEditPageClientProps) {
         actions={
           <Button asChild size="sm" className="bg-violet-600 hover:bg-violet-700">
             <Link href={`/album/${album.id}/view`}>
-              本として見る
+              {t(ui.edit.viewAsBook)}
               <ArrowRight className="size-4" />
             </Link>
           </Button>

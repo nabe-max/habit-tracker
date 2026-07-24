@@ -7,10 +7,13 @@ import type Konva from "konva";
 import { ImagePlus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 
-import { readImageFile, saveAlbum } from "@/lib/album/storage";
+import { readImageFile, ImageReadError, saveAlbum } from "@/lib/album/storage";
 import { Button } from "@/components/ui/button";
+import { formatPageTab } from "@/data/album/locale";
 import type { Album, AlbumPhotoItem } from "@/types/album";
 import { ALBUM_PAGE_HEIGHT, ALBUM_PAGE_WIDTH, createEmptyPage } from "@/types/album";
+
+import { useAlbumUi } from "./AlbumLocaleProvider";
 
 interface AlbumEditorProps {
   album: Album;
@@ -86,6 +89,7 @@ function CanvasImage({
 }
 
 export function AlbumEditor({ album, onAlbumChange }: AlbumEditorProps) {
+  const { locale, t, ui } = useAlbumUi();
   const [pageIndex, setPageIndex] = useState(0);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
@@ -128,9 +132,18 @@ export function AlbumEditor({ album, onAlbumChange }: AlbumEditorProps) {
       };
       updatePageItems([...currentPage.items, item]);
       setSelectedId(item.id);
-      toast.success("写真を追加しました");
+      toast.success(t(ui.editor.photoAdded));
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "追加に失敗しました");
+      if (err instanceof ImageReadError) {
+        const map = {
+          not_image: ui.errors.notImage,
+          too_large: ui.errors.tooLarge,
+          read_failed: ui.errors.readFailed,
+        };
+        toast.error(t(map[err.code]));
+      } else {
+        toast.error(t(ui.editor.addFailed));
+      }
     }
   }
 
@@ -167,11 +180,11 @@ export function AlbumEditor({ album, onAlbumChange }: AlbumEditorProps) {
                 : "border-violet-200"
             }
           >
-            {index + 1}ページ
+            {formatPageTab(index, locale)}
           </Button>
         ))}
         <Button type="button" size="sm" variant="outline" onClick={addPage}>
-          ＋ ページ
+          {t(ui.editor.addPage)}
         </Button>
       </div>
 
@@ -183,7 +196,7 @@ export function AlbumEditor({ album, onAlbumChange }: AlbumEditorProps) {
           className="bg-violet-600 hover:bg-violet-700"
         >
           <ImagePlus className="size-4" />
-          写真を追加
+          {t(ui.editor.addPhoto)}
         </Button>
         <Button
           type="button"
@@ -193,7 +206,7 @@ export function AlbumEditor({ album, onAlbumChange }: AlbumEditorProps) {
           onClick={deleteSelected}
         >
           <Trash2 className="size-4" />
-          削除
+          {t(ui.editor.delete)}
         </Button>
         <input
           ref={fileRef}
@@ -236,10 +249,7 @@ export function AlbumEditor({ album, onAlbumChange }: AlbumEditorProps) {
         </Stage>
       </div>
 
-      <p className="text-xs text-slate-500">
-        ドラッグで移動 · 角をドラッグでサイズ変更 ·
-        データはこの端末のブラウザに保存されます（1枚2MBまで）
-      </p>
+      <p className="text-xs text-slate-500">{t(ui.editor.hint)}</p>
     </div>
   );
 }
