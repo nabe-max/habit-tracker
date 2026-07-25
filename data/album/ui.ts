@@ -42,6 +42,38 @@ export const albumUi = {
   view: {
     edit: { en: "Edit", ja: "編集" },
   },
+  publish: {
+    button: { en: "Publish album", ja: "アルバムを公開" },
+    republish: { en: "Update public link", ja: "公開を更新" },
+    publishing: { en: "Publishing...", ja: "公開中..." },
+    success: { en: "Public link copied!", ja: "公開リンクをコピーしました！" },
+    publishedBadge: { en: "Public", ja: "公開中" },
+    copyLink: { en: "Copy link", ja: "リンクをコピー" },
+    publicViewHint: {
+      en: "Anyone with the link can view this album (read-only).",
+      ja: "リンクを知っている人なら誰でも閲覧できます（読み取り専用）。",
+    },
+    errors: {
+      invalid: { en: "Add at least one page before publishing", ja: "公開する前にページを追加してください" },
+      tooLarge: {
+        en: "Album is too large to publish (try fewer or smaller photos)",
+        ja: "アルバムが大きすぎます（写真の枚数やサイズを減らしてください）",
+      },
+      blob: {
+        en: "Publishing is not configured on the server yet",
+        ja: "サーバー側の公開設定がまだ完了していません",
+      },
+      failed: { en: "Could not publish album", ja: "公開に失敗しました" },
+    },
+  },
+  public: {
+    notFoundTitle: { en: "Album not found", ja: "アルバムが見つかりません" },
+    notFoundDesc: {
+      en: "This link may be expired or incorrect.",
+      ja: "リンクが間違っているか、削除された可能性があります。",
+    },
+    createOwn: { en: "Create your own album", ja: "自分のアルバムを作る" },
+  },
   editor: {
     addPage: { en: "+ Page", ja: "＋ ページ" },
     addPhoto: { en: "Add photo", ja: "写真を追加" },

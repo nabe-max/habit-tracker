@@ -13,6 +13,10 @@ import { interpolate } from "@/data/album/ui";
 import { deleteAlbum, getAlbums } from "@/lib/album/storage";
 import type { Album } from "@/types/album";
 
+function getPublicPath(shareId: string): string {
+  return `/album/p/${shareId}`;
+}
+
 export function AlbumBookshelf() {
   const { locale, t, ui } = useAlbumUi();
   const [albums, setAlbums] = useState<Album[]>([]);
@@ -64,9 +68,21 @@ export function AlbumBookshelf() {
                   <BookOpen className="size-10 text-violet-400" />
                 </div>
                 <h2 className="mt-3 font-semibold text-slate-800">{album.title}</h2>
-                <p className="text-sm text-slate-500">
-                  {formatPageCount(album.pages.length, locale)}
-                </p>
+                <div className="mt-1 flex flex-wrap items-center gap-2">
+                  <p className="text-sm text-slate-500">
+                    {formatPageCount(album.pages.length, locale)}
+                  </p>
+                  {album.shareId && (
+                    <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-medium text-emerald-700">
+                      {t(ui.publish.publishedBadge)}
+                    </span>
+                  )}
+                </div>
+                {album.shareId && (
+                  <p className="mt-1 break-all text-xs text-violet-600">
+                    {getPublicPath(album.shareId)}
+                  </p>
+                )}
                 <div className="mt-3 flex flex-wrap gap-2">
                   <Button asChild size="sm" className="bg-violet-600 hover:bg-violet-700">
                     <Link href={`/album/${album.id}/view`}>{t(ui.shelf.openBook)}</Link>

@@ -7,6 +7,7 @@ import { ArrowRight } from "lucide-react";
 
 import { AlbumEditor } from "@/components/album/AlbumEditor";
 import { AlbumHeader } from "@/components/album/AlbumHeader";
+import { AlbumPublishPanel } from "@/components/album/AlbumPublishButton";
 import { useAlbumUi } from "@/components/album/AlbumLocaleProvider";
 import { Button } from "@/components/ui/button";
 import { getAlbum } from "@/lib/album/storage";
@@ -51,7 +52,8 @@ export function AlbumEditPageClient({ id }: AlbumEditPageClientProps) {
           </Button>
         }
       />
-      <main className="mx-auto max-w-3xl px-4 py-8 sm:px-6">
+      <main className="mx-auto max-w-3xl space-y-6 px-4 py-8 sm:px-6">
+        <AlbumPublishPanel album={album} onPublished={setAlbum} />
         <AlbumEditor album={album} onAlbumChange={setAlbum} />
       </main>
     </div>

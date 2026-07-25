@@ -22,6 +22,8 @@ export interface Album {
   pages: AlbumPage[];
   createdAt: string;
   updatedAt: string;
+  shareId?: string;
+  publishedAt?: string;
 }
 
 export function createEmptyPage(): AlbumPage {
