@@ -7,7 +7,6 @@ import { Pencil } from "lucide-react";
 
 import { AlbumBookViewer } from "@/components/album/AlbumBookViewer";
 import { AlbumHeader } from "@/components/album/AlbumHeader";
-import { AlbumPublishPanel } from "@/components/album/AlbumPublishButton";
 import { useAlbumUi } from "@/components/album/AlbumLocaleProvider";
 import { Button } from "@/components/ui/button";
 import { getAlbum } from "@/lib/album/storage";
@@ -52,8 +51,7 @@ export function AlbumViewPageClient({ id }: AlbumViewPageClientProps) {
           </Button>
         }
       />
-      <main className="mx-auto max-w-3xl space-y-6 px-4 py-8 sm:px-6">
-        <AlbumPublishPanel album={album} onPublished={setAlbum} />
+      <main className="mx-auto max-w-3xl px-4 py-8 sm:px-6">
         <AlbumBookViewer album={album} />
       </main>
     </div>

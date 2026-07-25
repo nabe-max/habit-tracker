@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { Check } from "lucide-react";
 
-import { pickText, type OsakaLocale } from "@/data/osaka/locale";
+import { pickText } from "@/data/osaka/locale";
 import type { OsakaPrepItem } from "@/data/osaka/types";
 
 import { useOsakaLocale } from "./OsakaLocaleProvider";
