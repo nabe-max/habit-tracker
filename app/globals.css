@@ -79,3 +79,19 @@
     @apply bg-background text-foreground antialiased;
   }
 }
+
+.album-shelf-row {
+  background: linear-gradient(180deg, rgb(245 243 255 / 0.6) 0%, rgb(250 245 255 / 0.9) 72%, rgb(237 233 254) 100%);
+}
+
+.album-shelf-plank {
+  background: linear-gradient(180deg, #c4a574 0%, #a8844f 55%, #8b6a3e 100%);
+  box-shadow:
+    0 6px 12px rgb(88 28 135 / 0.12),
+    inset 0 1px 0 rgb(255 255 255 / 0.35);
+}
+
+.album-shelf-open-book {
+  perspective: 900px;
+  transform-style: preserve-3d;
+}

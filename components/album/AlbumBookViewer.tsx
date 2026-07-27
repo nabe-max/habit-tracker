@@ -8,6 +8,7 @@ import { AlbumPageSurface } from "@/components/album/AlbumPageSurface";
 import { FlipPage } from "@/components/album/FlipPage";
 import { Button } from "@/components/ui/button";
 import { interpolate } from "@/data/album/ui";
+import { getAlbumCoverSrc } from "@/lib/album/cover";
 import type { Album } from "@/types/album";
 import { ALBUM_PAGE_HEIGHT, ALBUM_PAGE_WIDTH } from "@/types/album";
 
@@ -15,6 +16,7 @@ import { useAlbumUi } from "./AlbumLocaleProvider";
 
 interface AlbumBookViewerProps {
   album: Album;
+  autoOpenCover?: boolean;
 }
 
 type FlipBookRef = {
@@ -24,11 +26,12 @@ type FlipBookRef = {
   };
 };
 
-export function AlbumBookViewer({ album }: AlbumBookViewerProps) {
+export function AlbumBookViewer({ album, autoOpenCover = false }: AlbumBookViewerProps) {
   const { t, ui } = useAlbumUi();
   const bookRef = useRef<FlipBookRef>(null);
   const [page, setPage] = useState(0);
   const [scale, setScale] = useState(1);
+  const coverSrc = getAlbumCoverSrc(album);
 
   useEffect(() => {
     function updateScale() {
@@ -40,7 +43,14 @@ export function AlbumBookViewer({ album }: AlbumBookViewerProps) {
     return () => window.removeEventListener("resize", updateScale);
   }, []);
 
-  const width = ALBUM_PAGE_WIDTH * scale;
+  useEffect(() => {
+    if (!autoOpenCover) return;
+    const timer = window.setTimeout(() => {
+      bookRef.current?.pageFlip().flipNext();
+    }, 650);
+    return () => window.clearTimeout(timer);
+  }, [autoOpenCover]);
+
   const height = ALBUM_PAGE_HEIGHT * scale;
   const totalPages = album.pages.length + 2;
 
@@ -82,11 +92,17 @@ export function AlbumBookViewer({ album }: AlbumBookViewerProps) {
           className="album-flip-book"
           style={{}}
         >
-          <FlipPage className="flex items-center justify-center bg-gradient-to-br from-amber-100 to-orange-200">
-            <div className="border-y-4 border-amber-800/20 px-8 text-center">
-              <BookOpen className="mx-auto mb-4 size-10 text-amber-900/70" />
-              <h2 className="text-2xl font-bold text-amber-950">{album.title}</h2>
-              <p className="mt-2 text-sm text-amber-900/70">{t(ui.book.coverHint)}</p>
+          <FlipPage className="relative overflow-hidden bg-gradient-to-br from-amber-100 to-orange-200">
+            {coverSrc ? (
+              <>
+                <img src={coverSrc} alt="" className="absolute inset-0 h-full w-full object-cover" />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/25 to-black/10" />
+              </>
+            ) : null}
+            <div className="relative flex h-full flex-col items-center justify-end px-8 pb-10 text-center">
+              {!coverSrc ? <BookOpen className="mx-auto mb-4 size-10 text-amber-900/70" /> : null}
+              <h2 className="text-2xl font-bold text-white drop-shadow-md">{album.title}</h2>
+              <p className="mt-2 text-sm text-white/85">{t(ui.book.coverHint)}</p>
             </div>
           </FlipPage>
 

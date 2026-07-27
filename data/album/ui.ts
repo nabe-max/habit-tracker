@@ -21,6 +21,10 @@ export const albumUi = {
     },
     createFirst: { en: "Create your first album", ja: "最初のアルバムを作る" },
     openBook: { en: "Open book", ja: "本を開く" },
+    openBookAria: {
+      en: 'Take "{title}" off the shelf and open',
+      ja: "「{title}」を本棚から取り出して開く",
+    },
     edit: { en: "Edit", ja: "編集" },
     deleteConfirm: {
       en: 'Delete "{title}"?',
