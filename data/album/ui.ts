@@ -20,12 +20,17 @@ export const albumUi = {
       ja: "写真を自由に配置して、本のようにめくれるアルバムを作れます。",
     },
     createFirst: { en: "Create your first album", ja: "最初のアルバムを作る" },
+    pickHint: {
+      en: "Tap a book on the shelf to take it out and open",
+      ja: "本棚の背表紙をタップして、取り出して開く",
+    },
     openBook: { en: "Open book", ja: "本を開く" },
     openBookAria: {
       en: 'Take "{title}" off the shelf and open',
       ja: "「{title}」を本棚から取り出して開く",
     },
     edit: { en: "Edit", ja: "編集" },
+    deleteAria: { en: "Delete album", ja: "アルバムを削除" },
     deleteConfirm: {
       en: 'Delete "{title}"?',
       ja: "「{title}」を削除しますか？",

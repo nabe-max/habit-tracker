@@ -80,15 +80,39 @@
   }
 }
 
-.album-shelf-row {
-  background: linear-gradient(180deg, rgb(245 243 255 / 0.6) 0%, rgb(250 245 255 / 0.9) 72%, rgb(237 233 254) 100%);
+.album-bookshelf-cabinet {
+  background: linear-gradient(180deg, #1a1410 0%, #0f0c09 100%);
+  border: 1px solid rgb(255 255 255 / 0.06);
 }
 
-.album-shelf-plank {
-  background: linear-gradient(180deg, #c4a574 0%, #a8844f 55%, #8b6a3e 100%);
+.album-shelf-tier + .album-shelf-tier {
+  border-top: 1px solid rgb(0 0 0 / 0.35);
+}
+
+.album-shelf-back {
+  background:
+    linear-gradient(180deg, rgb(255 255 255 / 0.03) 0%, transparent 40%),
+    repeating-linear-gradient(
+      90deg,
+      rgb(255 255 255 / 0.015) 0,
+      rgb(255 255 255 / 0.015) 1px,
+      transparent 1px,
+      transparent 48px
+    ),
+    #12100d;
+}
+
+.album-shelf-plank-dark {
+  background: linear-gradient(180deg, #3d342c 0%, #2a221c 45%, #1a1512 100%);
   box-shadow:
-    0 6px 12px rgb(88 28 135 / 0.12),
-    inset 0 1px 0 rgb(255 255 255 / 0.35);
+    0 8px 16px rgb(0 0 0 / 0.55),
+    inset 0 1px 0 rgb(255 255 255 / 0.08),
+    inset 0 -2px 4px rgb(0 0 0 / 0.35);
+}
+
+.album-book-spine {
+  border-left: 1px solid rgb(255 255 255 / 0.08);
+  border-right: 1px solid rgb(0 0 0 / 0.35);
 }
 
 .album-shelf-open-book {

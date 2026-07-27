@@ -3,11 +3,12 @@
 import { useEffect, useState } from "react";
 
 import { AlbumBookCover } from "@/components/album/AlbumBookCover";
+import { AlbumBookSpine } from "@/components/album/AlbumBookSpine";
 import type { Album } from "@/types/album";
 
 export const ALBUM_SHELF_OPEN_KEY = "album-shelf-open";
 
-type AnimationPhase = "start" | "lift" | "center" | "open";
+type AnimationPhase = "start" | "pull" | "turn" | "open";
 
 interface AlbumShelfOpenOverlayProps {
   album: Album;
@@ -18,40 +19,46 @@ interface AlbumShelfOpenOverlayProps {
 export function AlbumShelfOpenOverlay({ album, originRect, onComplete }: AlbumShelfOpenOverlayProps) {
   const [phase, setPhase] = useState<AnimationPhase>("start");
   const [visible, setVisible] = useState(false);
+  const [viewport, setViewport] = useState({ width: 390, height: 844 });
+
+  useEffect(() => {
+    setViewport({ width: window.innerWidth, height: window.innerHeight });
+  }, []);
 
   useEffect(() => {
     const raf = requestAnimationFrame(() => setVisible(true));
-    const lift = window.setTimeout(() => setPhase("lift"), 50);
-    const center = window.setTimeout(() => setPhase("center"), 450);
-    const open = window.setTimeout(() => setPhase("open"), 900);
-    const done = window.setTimeout(() => onComplete(), 1250);
+    const pull = window.setTimeout(() => setPhase("pull"), 80);
+    const turn = window.setTimeout(() => setPhase("turn"), 520);
+    const open = window.setTimeout(() => setPhase("open"), 980);
+    const done = window.setTimeout(() => onComplete(), 1350);
 
     return () => {
       cancelAnimationFrame(raf);
-      window.clearTimeout(lift);
-      window.clearTimeout(center);
+      window.clearTimeout(pull);
+      window.clearTimeout(turn);
       window.clearTimeout(open);
       window.clearTimeout(done);
     };
   }, [onComplete]);
 
-  const centerWidth = Math.min(320, Math.max(originRect.width * 1.35, 240));
-  const centerHeight = centerWidth * (4 / 3);
+  const coverWidth = Math.min(300, Math.max(originRect.width * 4.5, 240));
+  const coverHeight = coverWidth * (4 / 3);
 
-  const atOrigin = phase === "start" || phase === "lift";
-  const left = atOrigin ? originRect.left : window.innerWidth / 2 - centerWidth / 2;
-  const top = atOrigin
-    ? originRect.top + (phase === "lift" ? -28 : 0)
-    : window.innerHeight / 2 - centerHeight / 2;
-  const width = atOrigin ? originRect.width : centerWidth;
-  const height = atOrigin ? originRect.height : centerHeight;
-  const rotateY = phase === "open" ? -32 : phase === "lift" ? -10 : 0;
-  const scale = phase === "open" ? 1.05 : phase === "center" ? 1 : phase === "lift" ? 1.06 : 1;
+  const atShelf = phase === "start" || phase === "pull";
+  const left = atShelf ? originRect.left : viewport.width / 2 - coverWidth / 2;
+  const top = atShelf
+    ? originRect.top + (phase === "pull" ? -36 : 0)
+    : viewport.height / 2 - coverHeight / 2;
+  const width = atShelf ? originRect.width : coverWidth;
+  const height = atShelf ? originRect.height : coverHeight;
+  const rotateY = phase === "open" ? -28 : phase === "turn" ? -8 : phase === "pull" ? 12 : 0;
+  const scale = phase === "open" ? 1.04 : phase === "turn" || phase === "pull" ? 1.08 : 1;
+  const showCover = phase === "turn" || phase === "open";
 
   return (
     <div
       className="fixed inset-0 z-50 transition-opacity duration-300"
-      style={{ opacity: visible ? 1 : 0, backgroundColor: "rgba(15, 23, 42, 0.45)" }}
+      style={{ opacity: visible ? 1 : 0, backgroundColor: "rgba(8, 6, 4, 0.72)" }}
       aria-hidden
     >
       <div
@@ -64,10 +71,23 @@ export function AlbumShelfOpenOverlay({ album, originRect, onComplete }: AlbumSh
           height,
           transform: `rotateY(${rotateY}deg) scale(${scale})`,
           transformOrigin: "left center",
-          transition: "all 0.45s cubic-bezier(0.22, 1, 0.36, 1)",
+          transition: "all 0.48s cubic-bezier(0.22, 1, 0.36, 1)",
         }}
       >
-        <AlbumBookCover album={album} className="h-full w-full shadow-2xl" />
+        <div className="relative h-full w-full">
+          <div
+            className="absolute inset-0 transition-opacity duration-300"
+            style={{ opacity: showCover ? 0 : 1 }}
+          >
+            <AlbumBookSpine album={album} className="h-full w-full" />
+          </div>
+          <div
+            className="absolute inset-0 transition-opacity duration-300"
+            style={{ opacity: showCover ? 1 : 0 }}
+          >
+            <AlbumBookCover album={album} className="h-full w-full shadow-2xl" />
+          </div>
+        </div>
       </div>
     </div>
   );
