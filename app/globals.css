@@ -119,3 +119,24 @@
   perspective: 900px;
   transform-style: preserve-3d;
 }
+
+.album-shelf-empty-slot {
+  transition: border-color 0.2s ease, background-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.album-shelf-empty-slot--highlight {
+  border-color: rgb(196 181 253 / 0.75);
+  background-color: rgb(139 92 246 / 0.15);
+  box-shadow: 0 0 0 2px rgb(139 92 246 / 0.25);
+}
+
+.album-return-drop-zone--active .album-return-shelf-bar {
+  border-color: rgb(196 181 253 / 0.65);
+  box-shadow:
+    0 0 0 2px rgb(139 92 246 / 0.35),
+    0 -8px 24px rgb(88 28 135 / 0.25);
+}
+
+.album-return-drag-book:active {
+  scale: 1.02;
+}

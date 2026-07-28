@@ -8,7 +8,9 @@ import { Pencil } from "lucide-react";
 import { AlbumBookViewer } from "@/components/album/AlbumBookViewer";
 import { AlbumHeader } from "@/components/album/AlbumHeader";
 import { useAlbumUi } from "@/components/album/AlbumLocaleProvider";
+import { AlbumReturnDrag } from "@/components/album/AlbumReturnDrag";
 import { ALBUM_SHELF_OPEN_KEY } from "@/components/album/AlbumShelfOpenOverlay";
+import { isCheckedOut } from "@/lib/album/shelf-layout";
 import { Button } from "@/components/ui/button";
 import { getAlbum } from "@/lib/album/storage";
 import { cn } from "@/lib/utils";
@@ -23,6 +25,7 @@ export function AlbumViewPageClient({ id }: AlbumViewPageClientProps) {
   const { t, ui } = useAlbumUi();
   const [album, setAlbum] = useState<Album | null>(null);
   const [fromShelf, setFromShelf] = useState(false);
+  const [canReturn, setCanReturn] = useState(false);
   const [revealed, setRevealed] = useState(false);
 
   useEffect(() => {
@@ -40,6 +43,8 @@ export function AlbumViewPageClient({ id }: AlbumViewPageClientProps) {
     } else {
       setRevealed(true);
     }
+
+    setCanReturn(isCheckedOut(id));
   }, [id, router]);
 
   useEffect(() => {
@@ -57,7 +62,7 @@ export function AlbumViewPageClient({ id }: AlbumViewPageClientProps) {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-violet-50 via-white to-fuchsia-50">
+    <div className="min-h-screen bg-gradient-to-br from-violet-50 via-white to-fuchsia-50 pb-28">
       <AlbumHeader
         title={album.title}
         actions={
@@ -81,6 +86,8 @@ export function AlbumViewPageClient({ id }: AlbumViewPageClientProps) {
           <AlbumBookViewer album={album} autoOpenCover={fromShelf} />
         </div>
       </main>
+
+      {canReturn ? <AlbumReturnDrag album={album} /> : null}
     </div>
   );
 }

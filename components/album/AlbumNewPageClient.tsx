@@ -8,6 +8,7 @@ import { useAlbumUi } from "@/components/album/AlbumLocaleProvider";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { saveAlbum } from "@/lib/album/storage";
+import { addAlbumToShelf } from "@/lib/album/shelf-layout";
 import { createAlbum } from "@/types/album";
 
 export function AlbumNewPageClient() {
@@ -20,6 +21,7 @@ export function AlbumNewPageClient() {
     const trimmed = title.trim() || t(ui.new.defaultTitle);
     const album = createAlbum(trimmed);
     saveAlbum(album);
+    addAlbumToShelf(album.id);
     router.push(`/album/${album.id}/edit`);
   }
 

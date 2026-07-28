@@ -21,8 +21,8 @@ export const albumUi = {
     },
     createFirst: { en: "Create your first album", ja: "最初のアルバムを作る" },
     pickHint: {
-      en: "Tap a book on the shelf to take it out and open",
-      ja: "本棚の背表紙をタップして、取り出して開く",
+      en: "Tap a spine to take a book out · drag it back to its slot",
+      ja: "背表紙をタップして取り出す · ドラッグで元の位置に戻す",
     },
     openBook: { en: "Open book", ja: "本を開く" },
     openBookAria: {
@@ -50,6 +50,15 @@ export const albumUi = {
   },
   view: {
     edit: { en: "Edit", ja: "編集" },
+    returnHint: {
+      en: "Drag the book here to return it to its shelf slot",
+      ja: "本をここにドラッグして、元の棚に戻す",
+    },
+    returnDragLabel: { en: "Drag back", ja: "戻す" },
+    returnDragAria: {
+      en: "Drag album back to shelf",
+      ja: "アルバムを本棚に戻す",
+    },
   },
   editor: {
     addPage: { en: "+ Page", ja: "＋ ページ" },
