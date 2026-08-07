@@ -13,8 +13,12 @@
   "dependencies": {
     "@radix-ui/react-select": "^2.2.2",
     "@radix-ui/react-slot": "^1.2.0",
+    "@supabase/supabase-js": "^2.112.2",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
+    "date-fns": "^4.4.0",
+    "date-fns-tz": "^3.2.0",
+    "jose": "^6.2.8",
     "konva": "^10.3.0",
     "lucide-react": "^0.511.0",
     "next": "^15.3.3",
@@ -24,6 +28,7 @@
     "react-dom": "^19.1.0",
     "react-konva": "^19.2.5",
     "react-pageflip": "^2.0.3",
+    "resend": "^6.18.1",
     "sonner": "^2.0.3",
     "tailwind-merge": "^3.3.0",
     "use-image": "^1.1.4"
