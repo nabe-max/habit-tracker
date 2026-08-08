@@ -8,10 +8,16 @@ export function computeNextMorningDelivery(
   from = new Date(),
 ): Date {
   const zonedNow = toZonedTime(from, timezone);
-  const tomorrow = addDays(zonedNow, 1);
-  const datePart = format(tomorrow, "yyyy-MM-dd");
   const timePart = `${String(hour).padStart(2, "0")}:${String(minute).padStart(2, "0")}:00`;
-  return fromZonedTime(`${datePart}T${timePart}`, timezone);
+  const todayDelivery = fromZonedTime(`${format(zonedNow, "yyyy-MM-dd")}T${timePart}`, timezone);
+
+  // 今夜登録 → 同じ日の朝（まだ来ていなければ）。朝を過ぎていたら翌朝。
+  if (todayDelivery > from) {
+    return todayDelivery;
+  }
+
+  const tomorrow = addDays(zonedNow, 1);
+  return fromZonedTime(`${format(tomorrow, "yyyy-MM-dd")}T${timePart}`, timezone);
 }
 
 export function formatDeliveryLocal(iso: string, timezone: string): string {
