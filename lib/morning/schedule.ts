@@ -11,7 +11,7 @@ export function computeNextMorningDelivery(
   const timePart = `${String(hour).padStart(2, "0")}:${String(minute).padStart(2, "0")}:00`;
   const todayDelivery = fromZonedTime(`${format(zonedNow, "yyyy-MM-dd")}T${timePart}`, timezone);
 
-  // 今夜登録 → 同じ日の朝（まだ来ていなければ）。朝を過ぎていたら翌朝。
+  // Register tonight → same morning if it hasn't passed yet; otherwise next morning.
   if (todayDelivery > from) {
     return todayDelivery;
   }
@@ -22,5 +22,5 @@ export function computeNextMorningDelivery(
 
 export function formatDeliveryLocal(iso: string, timezone: string): string {
   const date = toZonedTime(new Date(iso), timezone);
-  return format(date, "M月d日 HH:mm");
+  return format(date, "MMM d, HH:mm");
 }

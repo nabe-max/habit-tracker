@@ -38,13 +38,13 @@ export function MorningSettingsForm({ user, onUpdated }: MorningSettingsFormProp
       const data = (await res.json()) as { error?: string };
 
       if (!res.ok) {
-        throw new Error(data.error ?? "更新に失敗しました");
+        throw new Error(data.error ?? "Failed to update settings");
       }
 
-      toast.success("通知時刻を更新しました");
+      toast.success("Delivery time updated");
       onUpdated();
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "更新に失敗しました");
+      toast.error(error instanceof Error ? error.message : "Failed to update settings");
     } finally {
       setLoading(false);
     }
@@ -57,7 +57,7 @@ export function MorningSettingsForm({ user, onUpdated }: MorningSettingsFormProp
     >
       <div className="flex items-center gap-2 text-slate-800">
         <Clock3 className="size-4" />
-        <h2 className="font-semibold">届ける時刻</h2>
+        <h2 className="font-semibold">Delivery time</h2>
       </div>
       <div className="flex items-center gap-2">
         <Input
@@ -77,11 +77,11 @@ export function MorningSettingsForm({ user, onUpdated }: MorningSettingsFormProp
           onChange={(event) => setMinute(event.target.value)}
           className="w-20"
         />
-        <span className="text-sm text-slate-500">（{user.timezone}）</span>
+        <span className="text-sm text-slate-500">({user.timezone})</span>
       </div>
       <Button type="submit" disabled={loading} variant="outline">
         {loading ? <Loader2 className="size-4 animate-spin" /> : null}
-        時刻を保存
+        Save time
       </Button>
     </form>
   );

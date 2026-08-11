@@ -4,8 +4,8 @@ import { MorningDashboard } from "@/components/morning/MorningDashboard";
 import { isMorningConfigured } from "@/lib/morning/env";
 
 export const metadata: Metadata = {
-  title: "Morning You | 昨日の自分から、今朝届く",
-  description: "夜に書いたモチベーションの一言が、翌朝メールで届くサービス。",
+  title: "Morning You | A note from yesterday's you",
+  description: "Write a motivation note at night. Wake up to it in your inbox.",
 };
 
 export default function MorningPage() {
@@ -17,7 +17,7 @@ export default function MorningPage() {
         <div className="mx-auto flex max-w-2xl items-center justify-between px-4 py-4 sm:px-6">
           <div>
             <p className="text-lg font-semibold text-slate-800">Morning You</p>
-            <p className="text-sm text-slate-500">昨夜の自分 → 今朝のメール</p>
+            <p className="text-sm text-slate-500">Last night&apos;s you → This morning&apos;s email</p>
           </div>
         </div>
       </header>
@@ -25,23 +25,23 @@ export default function MorningPage() {
       <main className="mx-auto max-w-2xl px-4 py-8 sm:px-6">
         {!configured ? (
           <div className="rounded-2xl border border-amber-200 bg-white p-6 text-sm text-slate-600 shadow-sm">
-            <p className="font-medium text-slate-800">セットアップが必要です</p>
+            <p className="font-medium text-slate-800">Setup required</p>
             <p className="mt-2">
-              Supabase と Resend の環境変数を設定してください。詳しくは{" "}
+              Configure Supabase and Resend environment variables. See the{" "}
               <a href="/morning/setup" className="text-amber-700 underline">
-                セットアップガイド
+                setup guide
               </a>
-              を見てください。
+              .
             </p>
           </div>
         ) : (
           <>
             <section className="mb-8 text-center">
               <h1 className="text-2xl font-bold text-slate-900 sm:text-3xl">
-                明日の朝、昨日の自分から届く
+                Tomorrow morning, a message from yesterday&apos;s you
               </h1>
               <p className="mt-3 text-slate-600">
-                夜にモチベーションの一言を残す。翌朝、メールで未来の自分に届く。
+                Leave yourself one line of motivation at night. Get it in your inbox the next morning.
               </p>
             </section>
             <MorningDashboard />

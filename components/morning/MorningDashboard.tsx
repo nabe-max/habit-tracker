@@ -32,13 +32,13 @@ export function MorningDashboard() {
         return;
       }
       if (!res.ok) {
-        throw new Error("読み込みに失敗しました");
+        throw new Error("Failed to load");
       }
       const json = (await res.json()) as DashboardData;
       setData(json);
       setAuthed(true);
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "読み込みに失敗しました");
+      toast.error(error instanceof Error ? error.message : "Failed to load");
     } finally {
       setLoading(false);
     }
@@ -52,7 +52,7 @@ export function MorningDashboard() {
     await fetch("/api/morning/auth/logout", { method: "POST" });
     setAuthed(false);
     setData(null);
-    toast.success("ログアウトしました");
+    toast.success("Signed out");
   }
 
   if (loading) {
@@ -76,12 +76,12 @@ export function MorningDashboard() {
           </div>
           <div>
             <p className="font-semibold text-slate-800">{data.user.email}</p>
-            <p className="text-sm text-slate-500">昨夜の自分 → 今朝のメール</p>
+            <p className="text-sm text-slate-500">Last night&apos;s you → This morning&apos;s email</p>
           </div>
         </div>
         <Button type="button" variant="outline" size="sm" onClick={handleLogout}>
           <LogOut className="size-4" />
-          ログアウト
+          Sign out
         </Button>
       </div>
 

@@ -19,7 +19,7 @@ export async function POST(req: Request) {
     const email = body.email?.trim().toLowerCase();
 
     if (!email || !EMAIL_RE.test(email)) {
-      return NextResponse.json({ error: "有効なメールアドレスを入力してください" }, { status: 400 });
+      return NextResponse.json({ error: "Please enter a valid email address" }, { status: 400 });
     }
 
     const token = crypto.randomUUID();
@@ -32,6 +32,6 @@ export async function POST(req: Request) {
     return NextResponse.json({ ok: true });
   } catch (error) {
     console.error("[POST /api/morning/auth/request]", error);
-    return NextResponse.json({ error: "ログインリンクの送信に失敗しました" }, { status: 500 });
+    return NextResponse.json({ error: "Failed to send login link" }, { status: 500 });
   }
 }

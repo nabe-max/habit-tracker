@@ -38,6 +38,6 @@ export async function PATCH(req: Request) {
     return NextResponse.json({ user: updated });
   } catch (error) {
     console.error("[PATCH /api/morning/settings]", error);
-    return NextResponse.json({ error: "設定の更新に失敗しました" }, { status: 500 });
+    return NextResponse.json({ error: "Failed to update settings" }, { status: 500 });
   }
 }

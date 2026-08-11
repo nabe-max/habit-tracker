@@ -8,20 +8,20 @@ export default function MorningSetupPage() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-amber-50 via-white to-orange-50 px-4 py-10">
       <div className="mx-auto max-w-2xl space-y-6 rounded-2xl border border-amber-100 bg-white p-6 shadow-sm">
-        <h1 className="text-2xl font-bold text-slate-900">Morning You セットアップ</h1>
+        <h1 className="text-2xl font-bold text-slate-900">Morning You Setup</h1>
         <ol className="list-decimal space-y-4 pl-5 text-sm text-slate-700">
           <li>
-            <strong>Supabase</strong> でプロジェクトを作成し、{" "}
-            <code className="rounded bg-slate-100 px-1">supabase/morning-schema.sql</code>{" "}
-            を SQL Editor で実行
+            Create a <strong>Supabase</strong> project and run{" "}
+            <code className="rounded bg-slate-100 px-1">supabase/morning-schema.sql</code> in the SQL
+            Editor
           </li>
           <li>
-            <strong>Resend</strong> で API キーを作成（送信元メールも設定）
+            Create a <strong>Resend</strong> API key (and configure the sender email)
           </li>
           <li>
-            <code className="rounded bg-slate-100 px-1">.env.local</code> に環境変数を追加
+            Add environment variables to <code className="rounded bg-slate-100 px-1">.env.local</code>
           </li>
-          <li>Vercel に同じ環境変数を設定し、Redeploy</li>
+          <li>Add the same variables to Vercel and Redeploy</li>
         </ol>
 
         <pre className="overflow-x-auto rounded-xl bg-slate-950 p-4 text-xs text-slate-100">
@@ -35,7 +35,9 @@ NEXT_PUBLIC_APP_URL=https://your-app.vercel.app`}
         </pre>
 
         <p className="text-sm text-slate-500">
-          Cron は毎時0分に <code>/api/cron/morning-send</code> を実行し、届ける時刻を過ぎたメッセージを送信します。
+          Use an external cron service (e.g. cron-job.org) to call{" "}
+          <code>/api/cron/morning-send</code> every hour. Messages are sent once their delivery time
+          has passed.
         </p>
       </div>
     </div>

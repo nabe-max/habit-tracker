@@ -29,14 +29,14 @@ export function MorningLoginForm({ onSuccess }: MorningLoginFormProps) {
       const data = (await res.json()) as { error?: string };
 
       if (!res.ok) {
-        throw new Error(data.error ?? "送信に失敗しました");
+        throw new Error(data.error ?? "Failed to send login link");
       }
 
       setSent(true);
-      toast.success("ログインリンクを送信しました");
+      toast.success("Login link sent");
       onSuccess?.();
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "送信に失敗しました");
+      toast.error(error instanceof Error ? error.message : "Failed to send login link");
     } finally {
       setLoading(false);
     }
@@ -46,9 +46,9 @@ export function MorningLoginForm({ onSuccess }: MorningLoginFormProps) {
     return (
       <div className="rounded-2xl border border-amber-100 bg-white p-6 text-center shadow-sm">
         <Mail className="mx-auto size-10 text-amber-500" />
-        <h2 className="mt-4 text-lg font-semibold text-slate-800">メールを確認してください</h2>
+        <h2 className="mt-4 text-lg font-semibold text-slate-800">Check your email</h2>
         <p className="mt-2 text-sm text-slate-600">
-          <span className="font-medium text-slate-800">{email}</span> にログインリンクを送りました。
+          We sent a login link to <span className="font-medium text-slate-800">{email}</span>.
         </p>
       </div>
     );
@@ -64,8 +64,8 @@ export function MorningLoginForm({ onSuccess }: MorningLoginFormProps) {
           <Sun className="size-5" />
         </div>
         <div>
-          <h2 className="font-semibold text-slate-800">メールでログイン</h2>
-          <p className="text-sm text-slate-500">翌朝、ここに登録した言葉が届きます</p>
+          <h2 className="font-semibold text-slate-800">Sign in with email</h2>
+          <p className="text-sm text-slate-500">Your note will arrive here tomorrow morning</p>
         </div>
       </div>
       <Input
@@ -82,7 +82,7 @@ export function MorningLoginForm({ onSuccess }: MorningLoginFormProps) {
         className="w-full bg-amber-500 hover:bg-amber-600 text-white"
       >
         {loading ? <Loader2 className="size-4 animate-spin" /> : null}
-        ログインリンクを送る
+        Send login link
       </Button>
     </form>
   );

@@ -10,14 +10,14 @@ export function MorningHistory({ user, history }: MorningHistoryProps) {
   if (history.length === 0) {
     return (
       <div className="rounded-2xl border border-dashed border-slate-200 bg-white/70 p-6 text-sm text-slate-500">
-        まだ履歴がありません。今夜の一言を登録してみてください。
+        No history yet. Try leaving tonight&apos;s note.
       </div>
     );
   }
 
   return (
     <div className="space-y-3">
-      <h2 className="font-semibold text-slate-800">これまでの一言</h2>
+      <h2 className="font-semibold text-slate-800">Past notes</h2>
       <ul className="space-y-3">
         {history.map((message) => (
           <li
@@ -27,8 +27,8 @@ export function MorningHistory({ user, history }: MorningHistoryProps) {
             <p className="whitespace-pre-wrap text-slate-800">{message.body}</p>
             <p className="mt-2 text-xs text-slate-500">
               {message.sent_at
-                ? `送信済み · ${formatDeliveryLocal(message.sent_at, user.timezone)}`
-                : `予約 · ${formatDeliveryLocal(message.deliver_at, user.timezone)}`}
+                ? `Sent · ${formatDeliveryLocal(message.sent_at, user.timezone)}`
+                : `Scheduled · ${formatDeliveryLocal(message.deliver_at, user.timezone)}`}
             </p>
           </li>
         ))}

@@ -15,10 +15,10 @@ export async function POST(req: Request) {
     const text = body.body?.trim();
 
     if (!text) {
-      return NextResponse.json({ error: "メッセージを入力してください" }, { status: 400 });
+      return NextResponse.json({ error: "Please enter a message" }, { status: 400 });
     }
     if (text.length > 500) {
-      return NextResponse.json({ error: "500文字以内にしてください" }, { status: 400 });
+      return NextResponse.json({ error: "Message must be 500 characters or less" }, { status: 400 });
     }
 
     const user = await getUserById(session.userId);
@@ -36,6 +36,6 @@ export async function POST(req: Request) {
     return NextResponse.json({ message });
   } catch (error) {
     console.error("[POST /api/morning/messages]", error);
-    return NextResponse.json({ error: "保存に失敗しました" }, { status: 500 });
+    return NextResponse.json({ error: "Failed to save message" }, { status: 500 });
   }
 }
