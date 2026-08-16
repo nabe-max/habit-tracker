@@ -3,9 +3,8 @@ import type { Metadata } from "next";
 import { SleepSoundApp } from "@/components/sleep/SleepSoundApp";
 
 export const metadata: Metadata = {
-  title: "Drift | Sleep sounds for deeper rest",
-  description:
-    "Choose river, wind, rain, and other calming sounds to improve your sleep quality.",
+  title: "Drift | 睡眠の質を高める環境音",
+  description: "川、風、雨などの環境音を選んで聴き、睡眠の質を向上させます。",
 };
 
 export default function SleepPage() {
@@ -17,10 +16,10 @@ export default function SleepPage() {
         <div className="mx-auto flex max-w-3xl items-center justify-between px-4 py-5 sm:px-6">
           <div>
             <p className="text-lg font-semibold tracking-wide text-white">Drift</p>
-            <p className="text-sm text-slate-400">Sleep sounds for deeper rest</p>
+            <p className="text-sm text-slate-400">睡眠の質を高める環境音</p>
           </div>
           <div className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs text-slate-400">
-            Free · No login
+            無料 · ログイン不要
           </div>
         </div>
       </header>
@@ -28,10 +27,10 @@ export default function SleepPage() {
       <main className="relative mx-auto max-w-3xl px-4 py-8 sm:px-6 sm:py-10">
         <section className="mb-8 text-center">
           <h1 className="text-3xl font-bold text-white sm:text-4xl">
-            Pick a sound. Fall asleep better.
+            音を選んで、より深く眠る
           </h1>
           <p className="mt-3 text-slate-400">
-            River, wind, rain, and more — select an ambient track and let it play all night.
+            川、風、雨など — 環境音を選んで、一晩中そのまま流せます。
           </p>
         </section>
 

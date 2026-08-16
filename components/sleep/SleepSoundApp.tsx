@@ -94,9 +94,9 @@ export function SleepSoundApp() {
       <section className="rounded-2xl border border-white/10 bg-white/5 p-6 backdrop-blur-sm">
         <div className="flex flex-wrap items-center justify-between gap-4">
           <div>
-            <p className="text-sm text-slate-400">Now playing</p>
+            <p className="text-sm text-slate-400">再生中</p>
             <p className="text-xl font-semibold text-white">
-              {activeSound ? activeSound.name : "Choose a sound"}
+              {activeSound ? activeSound.name : "音を選んでください"}
             </p>
           </div>
 
@@ -112,12 +112,12 @@ export function SleepSoundApp() {
             ) : isPlaying ? (
               <>
                 <Pause className="size-5" />
-                Pause
+                一時停止
               </>
             ) : (
               <>
                 <Play className="size-5" />
-                Play
+                再生
               </>
             )}
           </Button>
@@ -127,7 +127,7 @@ export function SleepSoundApp() {
           <div>
             <div className="mb-2 flex items-center gap-2 text-sm text-slate-400">
               <Volume2 className="size-4" />
-              Volume
+              音量
             </div>
             <input
               type="range"
@@ -142,7 +142,7 @@ export function SleepSoundApp() {
           <div>
             <div className="mb-3 flex items-center gap-2 text-sm text-slate-400">
               <Timer className="size-4" />
-              Sleep timer
+              スリープタイマー
               {remainingSeconds !== null ? (
                 <span className="ml-auto font-mono text-indigo-300">
                   {formatRemaining(remainingSeconds)}
@@ -171,7 +171,7 @@ export function SleepSoundApp() {
       </section>
 
       <p className="text-center text-xs text-slate-500">
-        Ambient sounds loop seamlessly. Use a sleep timer to fade out automatically.
+        環境音は途切れずループします。スリープタイマーで自動停止もできます。
       </p>
     </div>
   );
