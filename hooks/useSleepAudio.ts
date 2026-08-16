@@ -2,35 +2,11 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 
+import { SeamlessAmbientPlayer } from "@/lib/sleep/seamlessPlayer";
 import { findSleepSound } from "@/lib/sleep/sounds";
 
-const FADE_MS = 2000;
-
-function fadeVolume(
-  audio: HTMLAudioElement,
-  from: number,
-  to: number,
-  durationMs: number,
-): Promise<void> {
-  return new Promise((resolve) => {
-    const start = performance.now();
-
-    function step(now: number) {
-      const progress = Math.min((now - start) / durationMs, 1);
-      audio.volume = from + (to - from) * progress;
-      if (progress < 1) {
-        requestAnimationFrame(step);
-      } else {
-        resolve();
-      }
-    }
-
-    requestAnimationFrame(step);
-  });
-}
-
 export function useSleepAudio() {
-  const audioRef = useRef<HTMLAudioElement | null>(null);
+  const playerRef = useRef<SeamlessAmbientPlayer | null>(null);
   const timerRef = useRef<number | null>(null);
   const endsAtRef = useRef<number | null>(null);
 
@@ -40,6 +16,13 @@ export function useSleepAudio() {
   const [timerMinutes, setTimerMinutesState] = useState(0);
   const [remainingSeconds, setRemainingSeconds] = useState<number | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+
+  const getPlayer = useCallback(() => {
+    if (!playerRef.current) {
+      playerRef.current = new SeamlessAmbientPlayer();
+    }
+    return playerRef.current;
+  }, []);
 
   const clearSleepTimer = useCallback(() => {
     if (timerRef.current !== null) {
@@ -51,19 +34,9 @@ export function useSleepAudio() {
   }, []);
 
   const stopPlayback = useCallback(async () => {
-    const audio = audioRef.current;
-    if (!audio) {
-      setIsPlaying(false);
-      return;
-    }
-
-    if (!audio.paused) {
-      await fadeVolume(audio, audio.volume, 0, FADE_MS);
-      audio.pause();
-    }
-
+    await getPlayer().stop(true);
     setIsPlaying(false);
-  }, []);
+  }, [getPlayer]);
 
   const startSleepTimer = useCallback(
     (minutes: number) => {
@@ -99,13 +72,14 @@ export function useSleepAudio() {
     [clearSleepTimer, isPlaying, startSleepTimer],
   );
 
-  const setVolume = useCallback((value: number) => {
-    const next = Math.min(1, Math.max(0, value));
-    setVolumeState(next);
-    if (audioRef.current) {
-      audioRef.current.volume = next;
-    }
-  }, []);
+  const setVolume = useCallback(
+    (value: number) => {
+      const next = Math.min(1, Math.max(0, value));
+      setVolumeState(next);
+      getPlayer().setVolume(next);
+    },
+    [getPlayer],
+  );
 
   const selectSound = useCallback(
     async (soundId: string) => {
@@ -115,18 +89,14 @@ export function useSleepAudio() {
       setIsLoading(true);
 
       try {
-        if (audioRef.current) {
-          await fadeVolume(audioRef.current, audioRef.current.volume, 0, 600);
-          audioRef.current.pause();
+        const player = getPlayer();
+        if (isPlaying) {
+          await player.stop(true);
         }
 
-        const audio = new Audio(sound.src);
-        audio.loop = true;
-        audio.volume = 0;
-        audioRef.current = audio;
-
-        await audio.play();
-        await fadeVolume(audio, 0, volume, FADE_MS);
+        await player.load(sound.src);
+        player.setVolume(volume);
+        await player.play();
 
         setActiveSoundId(soundId);
         setIsPlaying(true);
@@ -141,17 +111,11 @@ export function useSleepAudio() {
         setIsLoading(false);
       }
     },
-    [startSleepTimer, timerMinutes, volume],
+    [getPlayer, isPlaying, startSleepTimer, timerMinutes, volume],
   );
 
   const togglePlayback = useCallback(async () => {
     if (!activeSoundId) return;
-
-    const audio = audioRef.current;
-    if (!audio) {
-      await selectSound(activeSoundId);
-      return;
-    }
 
     if (isPlaying) {
       await stopPlayback();
@@ -160,9 +124,9 @@ export function useSleepAudio() {
     }
 
     try {
-      audio.volume = 0;
-      await audio.play();
-      await fadeVolume(audio, 0, volume, FADE_MS);
+      const player = getPlayer();
+      player.setVolume(volume);
+      await player.play();
       setIsPlaying(true);
       if (timerMinutes > 0) {
         startSleepTimer(timerMinutes);
@@ -173,8 +137,8 @@ export function useSleepAudio() {
   }, [
     activeSoundId,
     clearSleepTimer,
+    getPlayer,
     isPlaying,
-    selectSound,
     startSleepTimer,
     stopPlayback,
     timerMinutes,
@@ -184,8 +148,8 @@ export function useSleepAudio() {
   useEffect(() => {
     return () => {
       clearSleepTimer();
-      audioRef.current?.pause();
-      audioRef.current = null;
+      playerRef.current?.destroy();
+      playerRef.current = null;
     };
   }, [clearSleepTimer]);
 
