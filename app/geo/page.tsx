@@ -1,12 +1,12 @@
 import type { Metadata } from "next";
-import { Briefcase, FileBarChart, Sparkles, Users } from "lucide-react";
+import { CalendarClock, FileBarChart, Sparkles, Users } from "lucide-react";
 
 import { GeoScanner } from "@/components/geo/GeoScanner";
 
 export const metadata: Metadata = {
   title: "GEO Lab | 代理店向け AI検索可視化",
   description:
-    "SEO・集客代行の代理店向け。クライアントブランドがChatGPT等のAI回答に載っているかを計測し、クライアント提案用レポートを生成します。",
+    "SEO・集客代行の代理店向け。クライアントブランドがChatGPT等のAI回答に載っているかを計測し、週次プロンプト監視とクライアント提案用レポートを生成します。",
 };
 
 export default function GeoPage() {
@@ -37,7 +37,7 @@ export default function GeoPage() {
           </h1>
           <p className="mt-3 max-w-3xl text-slate-600">
             SEO・MEO・Web制作の代理店向けツール。クライアント名と業種を入力するだけで、
-            AI検索での可視性スコア・競合比較・改善提案を取得。提案資料にそのまま使えるレポートを生成します。
+            AI検索での可視性スコア・競合比較・改善提案を取得。週次プロンプト監視でスコア推移も追跡できます。
           </p>
 
           <div className="mt-6 grid gap-3 sm:grid-cols-3">
@@ -52,9 +52,9 @@ export default function GeoPage() {
               <p className="mt-1 text-sm text-slate-500">可視性スコア・競合比較・改善アクションをクライアント提案に転用</p>
             </div>
             <div className="rounded-2xl border border-violet-100 bg-white p-4 shadow-sm">
-              <Briefcase className="size-5 text-violet-600" />
-              <p className="mt-3 font-medium text-slate-900">新メニューとして販売</p>
-              <p className="mt-1 text-sm text-slate-500">「ChatGPT診断」をSEO/MEOの上位プランとして追加可能</p>
+              <CalendarClock className="size-5 text-violet-600" />
+              <p className="mt-3 font-medium text-slate-900">週次プロンプト監視</p>
+              <p className="mt-1 text-sm text-slate-500">6プロンプトを毎週自動スキャンし、前週比の変化を記録</p>
             </div>
           </div>
         </section>

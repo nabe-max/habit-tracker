@@ -82,7 +82,11 @@ async function buildRecommendations(params: {
   ];
 }
 
-export async function runGeoScan(request: GeoScanRequest): Promise<GeoScanResult> {
+export async function runGeoScan(
+  request: GeoScanRequest,
+  options?: { includeRecommendations?: boolean },
+): Promise<GeoScanResult> {
+  const includeRecommendations = options?.includeRecommendations ?? true;
   const competitors = (request.competitors ?? []).map((name) => name.trim()).filter(Boolean);
   const clientCategory = request.clientCategory.trim();
   const prompts = buildGeoPrompts({
@@ -107,13 +111,15 @@ export async function runGeoScan(request: GeoScanRequest): Promise<GeoScanResult
 
   const mentionCount = promptResults.filter((result) => result.mentioned).length;
   const visibilityScore = calculateVisibilityScore(mentionCount, promptResults.length);
-  const recommendations = await buildRecommendations({
-    brandName: request.brandName,
-    clientCategory,
-    visibilityScore,
-    promptResults,
-    competitors,
-  });
+  const recommendations = includeRecommendations
+    ? await buildRecommendations({
+        brandName: request.brandName,
+        clientCategory,
+        visibilityScore,
+        promptResults,
+        competitors,
+      })
+    : [];
 
   return {
     brandName: request.brandName,

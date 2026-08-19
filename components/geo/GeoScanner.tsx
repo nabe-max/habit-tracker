@@ -1,9 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useCallback, useState } from "react";
 import {
   ArrowRight,
   BarChart3,
+  CalendarClock,
   Loader2,
   Search,
   Sparkles,
@@ -11,9 +12,14 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 
+import {
+  GeoMonitorHistory,
+  GeoMonitorList,
+  saveMonitorClient,
+} from "@/components/geo/GeoMonitorHistory";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import type { GeoScanResult } from "@/lib/geo/types";
+import type { GeoMonitorClient, GeoScanResult } from "@/lib/geo/types";
 
 function scoreColor(score: number): string {
   if (score >= 60) return "text-emerald-600";
@@ -41,12 +47,19 @@ export function GeoScanner() {
   const [location, setLocation] = useState("");
   const [competitorsText, setCompetitorsText] = useState("");
   const [loading, setLoading] = useState(false);
+  const [monitorLoading, setMonitorLoading] = useState(false);
   const [result, setResult] = useState<GeoScanResult | null>(null);
+  const [activeMonitor, setActiveMonitor] = useState<GeoMonitorClient | null>(null);
+
+  const handleLatestFromHistory = useCallback((latest: GeoScanResult | null) => {
+    if (latest) setResult(latest);
+  }, []);
 
   async function handleScan(event: React.FormEvent) {
     event.preventDefault();
     setLoading(true);
     setResult(null);
+    setActiveMonitor(null);
 
     try {
       const res = await fetch("/api/geo/scan", {
@@ -75,8 +88,73 @@ export function GeoScanner() {
     }
   }
 
+  async function handleStartMonitor() {
+    if (!brandName.trim() || !clientCategory.trim()) {
+      toast.error("クライアント名と業種を入力してください");
+      return;
+    }
+
+    setMonitorLoading(true);
+
+    try {
+      const res = await fetch("/api/geo/monitor", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          brandName,
+          clientCategory,
+          website,
+          location,
+          competitorsText,
+        }),
+      });
+
+      const data = (await res.json()) as {
+        error?: string;
+        brandId?: string;
+        viewToken?: string;
+        brandName?: string;
+        clientCategory?: string;
+        result?: GeoScanResult;
+      };
+
+      if (!res.ok) {
+        throw new Error(data.error ?? "監視の開始に失敗しました");
+      }
+
+      const client: GeoMonitorClient = {
+        brandId: data.brandId!,
+        viewToken: data.viewToken!,
+        brandName: data.brandName!,
+        clientCategory: data.clientCategory!,
+      };
+
+      saveMonitorClient(client);
+      setActiveMonitor(client);
+      setResult(data.result ?? null);
+      toast.success("週次プロンプト監視を開始しました");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "監視の開始に失敗しました");
+    } finally {
+      setMonitorLoading(false);
+    }
+  }
+
+  function handleSelectMonitor(client: GeoMonitorClient) {
+    setActiveMonitor(client);
+    setBrandName(client.brandName);
+    setClientCategory(client.clientCategory);
+    setResult(null);
+  }
+
   return (
     <div className="space-y-8">
+      <GeoMonitorList activeBrandId={activeMonitor?.brandId} onSelect={handleSelectMonitor} />
+
+      {activeMonitor ? (
+        <GeoMonitorHistory client={activeMonitor} onLatestResult={handleLatestFromHistory} />
+      ) : null}
+
       <form
         onSubmit={handleScan}
         className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm"
@@ -142,14 +220,35 @@ export function GeoScanner() {
           </label>
         </div>
 
-        <Button
-          type="submit"
-          disabled={loading}
-          className="mt-6 w-full bg-violet-600 hover:bg-violet-500 text-white"
-        >
-          {loading ? <Loader2 className="size-4 animate-spin" /> : <Sparkles className="size-4" />}
-          {loading ? "診断中…（30秒ほどかかります）" : "クライアントを診断する"}
-        </Button>
+        <div className="mt-6 grid gap-3 sm:grid-cols-2">
+          <Button
+            type="submit"
+            disabled={loading || monitorLoading}
+            className="w-full bg-violet-600 hover:bg-violet-500 text-white"
+          >
+            {loading ? <Loader2 className="size-4 animate-spin" /> : <Sparkles className="size-4" />}
+            {loading ? "診断中…" : "1回診断する"}
+          </Button>
+
+          <Button
+            type="button"
+            variant="outline"
+            disabled={loading || monitorLoading}
+            onClick={() => void handleStartMonitor()}
+            className="w-full border-violet-200 text-violet-700 hover:bg-violet-50"
+          >
+            {monitorLoading ? (
+              <Loader2 className="size-4 animate-spin" />
+            ) : (
+              <CalendarClock className="size-4" />
+            )}
+            {monitorLoading ? "監視開始中…" : "週次監視を開始"}
+          </Button>
+        </div>
+
+        <p className="mt-3 text-xs text-slate-500">
+          週次監視は同じ6プロンプトを毎週自動スキャンし、スコアの推移を記録します（API代: クライアント1社あたり月約100〜300円）。
+        </p>
       </form>
 
       {result ? (
@@ -201,23 +300,25 @@ export function GeoScanner() {
             </section>
           ) : null}
 
-          <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-            <div className="mb-4 flex items-center gap-2">
-              <TrendingUp className="size-5 text-violet-600" />
-              <h3 className="font-semibold text-slate-900">クライアント提案用アクション</h3>
-            </div>
-            <ul className="space-y-3">
-              {result.recommendations.map((item) => (
-                <li
-                  key={item}
-                  className="flex items-start gap-3 rounded-xl bg-violet-50 px-4 py-3 text-sm text-slate-700"
-                >
-                  <ArrowRight className="mt-0.5 size-4 shrink-0 text-violet-600" />
-                  <span>{item}</span>
-                </li>
-              ))}
-            </ul>
-          </section>
+          {result.recommendations.length > 0 ? (
+            <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+              <div className="mb-4 flex items-center gap-2">
+                <TrendingUp className="size-5 text-violet-600" />
+                <h3 className="font-semibold text-slate-900">クライアント提案用アクション</h3>
+              </div>
+              <ul className="space-y-3">
+                {result.recommendations.map((item) => (
+                  <li
+                    key={item}
+                    className="flex items-start gap-3 rounded-xl bg-violet-50 px-4 py-3 text-sm text-slate-700"
+                  >
+                    <ArrowRight className="mt-0.5 size-4 shrink-0 text-violet-600" />
+                    <span>{item}</span>
+                  </li>
+                ))}
+              </ul>
+            </section>
+          ) : null}
 
           <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
             <h3 className="mb-4 font-semibold text-slate-900">プロンプト別の結果</h3>

@@ -25,3 +25,25 @@ export interface GeoScanResult {
   recommendations: string[];
   scannedAt: string;
 }
+
+export interface GeoMonitorClient {
+  brandId: string;
+  viewToken: string;
+  brandName: string;
+  clientCategory: string;
+}
+
+export interface GeoHistoryPoint {
+  id: string;
+  visibilityScore: number;
+  mentionCount: number;
+  totalPrompts: number;
+  scannedAt: string;
+}
+
+export interface GeoHistoryResponse {
+  brand: GeoMonitorClient;
+  runs: GeoHistoryPoint[];
+  weekOverWeekDelta: number | null;
+  latestResult: GeoScanResult | null;
+}
