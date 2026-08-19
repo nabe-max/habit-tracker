@@ -1,14 +1,6 @@
-export type GeoIndustry =
-  | "construction"
-  | "beauty"
-  | "saas"
-  | "restaurant"
-  | "professional"
-  | "general";
-
 export interface GeoScanRequest {
   brandName: string;
-  industry: GeoIndustry;
+  clientCategory: string;
   website?: string;
   location?: string;
   competitors?: string[];
@@ -24,7 +16,7 @@ export interface GeoPromptResult {
 
 export interface GeoScanResult {
   brandName: string;
-  industry: GeoIndustry;
+  clientCategory: string;
   visibilityScore: number;
   mentionCount: number;
   totalPrompts: number;

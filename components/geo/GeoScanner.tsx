@@ -13,17 +13,7 @@ import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { getIndustryLabel } from "@/lib/geo/prompts";
-import type { GeoIndustry, GeoScanResult } from "@/lib/geo/types";
-
-const INDUSTRIES: Array<{ id: GeoIndustry; label: string }> = [
-  { id: "construction", label: "設備工事・建設" },
-  { id: "beauty", label: "美容サロン" },
-  { id: "saas", label: "B2B SaaS" },
-  { id: "restaurant", label: "飲食店" },
-  { id: "professional", label: "士業・コンサル" },
-  { id: "general", label: "一般" },
-];
+import type { GeoScanResult } from "@/lib/geo/types";
 
 function scoreColor(score: number): string {
   if (score >= 60) return "text-emerald-600";
@@ -46,9 +36,9 @@ function sentimentLabel(sentiment: GeoScanResult["promptResults"][number]["senti
 
 export function GeoScanner() {
   const [brandName, setBrandName] = useState("");
+  const [clientCategory, setClientCategory] = useState("");
   const [website, setWebsite] = useState("");
   const [location, setLocation] = useState("");
-  const [industry, setIndustry] = useState<GeoIndustry>("construction");
   const [competitorsText, setCompetitorsText] = useState("");
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<GeoScanResult | null>(null);
@@ -64,9 +54,9 @@ export function GeoScanner() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           brandName,
+          clientCategory,
           website,
           location,
-          industry,
           competitorsText,
         }),
       });
@@ -77,7 +67,7 @@ export function GeoScanner() {
       }
 
       setResult(data.result ?? null);
-      toast.success("AI検索スキャンが完了しました");
+      toast.success("クライアント診断が完了しました");
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "スキャンに失敗しました");
     } finally {
@@ -96,18 +86,30 @@ export function GeoScanner() {
             <Search className="size-5" />
           </div>
           <div>
-            <h2 className="text-lg font-semibold text-slate-900">AI検索スキャン</h2>
-            <p className="text-sm text-slate-500">ChatGPTがあなたのブランドを答えに含めるかをチェック</p>
+            <h2 className="text-lg font-semibold text-slate-900">クライアント診断</h2>
+            <p className="text-sm text-slate-500">
+              クライアントがChatGPT等のAI回答に載っているかをチェック
+            </p>
           </div>
         </div>
 
         <div className="grid gap-4 sm:grid-cols-2">
-          <label className="space-y-2 sm:col-span-2">
-            <span className="text-sm font-medium text-slate-700">ブランド名 / 会社名 *</span>
+          <label className="space-y-2">
+            <span className="text-sm font-medium text-slate-700">クライアント名 *</span>
             <Input
               value={brandName}
               onChange={(event) => setBrandName(event.target.value)}
-              placeholder="例：〇〇設備工業"
+              placeholder="例：株式会社〇〇、〇〇クリニック"
+              required
+            />
+          </label>
+
+          <label className="space-y-2">
+            <span className="text-sm font-medium text-slate-700">クライアント業種 *</span>
+            <Input
+              value={clientCategory}
+              onChange={(event) => setClientCategory(event.target.value)}
+              placeholder="例：税理士、美容クリニック、SaaS"
               required
             />
           </label>
@@ -126,28 +128,8 @@ export function GeoScanner() {
             <Input
               value={location}
               onChange={(event) => setLocation(event.target.value)}
-              placeholder="例：大阪、東京"
+              placeholder="例：大阪、渋谷、全国"
             />
-          </label>
-
-          <label className="space-y-2 sm:col-span-2">
-            <span className="text-sm font-medium text-slate-700">業界 *</span>
-            <div className="grid gap-2 sm:grid-cols-3">
-              {INDUSTRIES.map((item) => (
-                <button
-                  key={item.id}
-                  type="button"
-                  onClick={() => setIndustry(item.id)}
-                  className={`rounded-xl border px-3 py-2 text-left text-sm transition-colors ${
-                    industry === item.id
-                      ? "border-violet-400 bg-violet-50 text-violet-800"
-                      : "border-slate-200 bg-white text-slate-600 hover:border-slate-300"
-                  }`}
-                >
-                  {item.label}
-                </button>
-              ))}
-            </div>
           </label>
 
           <label className="space-y-2 sm:col-span-2">
@@ -155,7 +137,7 @@ export function GeoScanner() {
             <Input
               value={competitorsText}
               onChange={(event) => setCompetitorsText(event.target.value)}
-              placeholder="例：A設備、B工業、Cメンテ"
+              placeholder="例：競合A、競合B、競合C"
             />
           </label>
         </div>
@@ -166,7 +148,7 @@ export function GeoScanner() {
           className="mt-6 w-full bg-violet-600 hover:bg-violet-500 text-white"
         >
           {loading ? <Loader2 className="size-4 animate-spin" /> : <Sparkles className="size-4" />}
-          {loading ? "スキャン中…（30秒ほどかかります）" : "AI検索をスキャンする"}
+          {loading ? "診断中…（30秒ほどかかります）" : "クライアントを診断する"}
         </Button>
       </form>
 
@@ -188,11 +170,9 @@ export function GeoScanner() {
               <p className="mt-1 text-sm text-slate-500">プロンプトでブランド名が出た数</p>
             </div>
             <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-              <p className="text-sm text-slate-500">業界</p>
-              <p className="mt-2 text-xl font-semibold text-slate-900">
-                {getIndustryLabel(result.industry)}
-              </p>
-              <p className="mt-1 text-sm text-slate-500">{result.brandName}</p>
+              <p className="text-sm text-slate-500">クライアント</p>
+              <p className="mt-2 text-xl font-semibold text-slate-900">{result.brandName}</p>
+              <p className="mt-1 text-sm text-slate-500">{result.clientCategory}</p>
             </div>
           </section>
 
@@ -224,7 +204,7 @@ export function GeoScanner() {
           <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
             <div className="mb-4 flex items-center gap-2">
               <TrendingUp className="size-5 text-violet-600" />
-              <h3 className="font-semibold text-slate-900">改善アクション</h3>
+              <h3 className="font-semibold text-slate-900">クライアント提案用アクション</h3>
             </div>
             <ul className="space-y-3">
               {result.recommendations.map((item) => (

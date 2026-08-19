@@ -1,17 +1,8 @@
 import { NextResponse } from "next/server";
 
 import { runGeoScan } from "@/lib/geo/analyzer";
-import type { GeoIndustry, GeoScanRequest } from "@/lib/geo/types";
+import type { GeoScanRequest } from "@/lib/geo/types";
 import { formatOpenAIError } from "@/lib/openai";
-
-const INDUSTRIES: GeoIndustry[] = [
-  "construction",
-  "beauty",
-  "saas",
-  "restaurant",
-  "professional",
-  "general",
-];
 
 export async function POST(req: Request) {
   if (!process.env.OPENAI_API_KEY?.trim()) {
@@ -24,7 +15,7 @@ export async function POST(req: Request) {
     };
 
     const brandName = body.brandName?.trim();
-    const industry = body.industry;
+    const clientCategory = body.clientCategory?.trim();
     const location = body.location?.trim();
     const website = body.website?.trim();
     const competitors = body.competitors?.length
@@ -35,16 +26,16 @@ export async function POST(req: Request) {
           .filter(Boolean);
 
     if (!brandName) {
-      return NextResponse.json({ error: "ブランド名を入力してください" }, { status: 400 });
+      return NextResponse.json({ error: "クライアント名を入力してください" }, { status: 400 });
     }
 
-    if (!industry || !INDUSTRIES.includes(industry)) {
-      return NextResponse.json({ error: "業界を選択してください" }, { status: 400 });
+    if (!clientCategory) {
+      return NextResponse.json({ error: "クライアント業種を入力してください" }, { status: 400 });
     }
 
     const result = await runGeoScan({
       brandName,
-      industry,
+      clientCategory,
       location,
       website,
       competitors: competitors.slice(0, 5),
