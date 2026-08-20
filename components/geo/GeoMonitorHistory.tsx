@@ -5,6 +5,8 @@ import { CalendarClock, Loader2, TrendingDown, TrendingUp } from "lucide-react";
 
 import type { GeoHistoryResponse, GeoMonitorClient } from "@/lib/geo/types";
 
+import { GeoVisibilityChart } from "@/components/geo/GeoVisibilityChart";
+
 const STORAGE_KEY = "geo_monitor_clients";
 
 export function loadMonitorClients(): GeoMonitorClient[] {
@@ -107,6 +109,13 @@ export function GeoMonitorHistory({ client, onLatestResult }: GeoMonitorHistoryP
   const maxScore = Math.max(...history.runs.map((run) => run.visibilityScore), 100);
 
   return (
+    <div className="space-y-6">
+      <GeoVisibilityChart
+        brandName={client.brandName}
+        runs={history.runs}
+        weekOverWeekDelta={history.weekOverWeekDelta}
+      />
+
     <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
       <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-2">
@@ -166,6 +175,7 @@ export function GeoMonitorHistory({ client, onLatestResult }: GeoMonitorHistoryP
         ))}
       </div>
     </section>
+    </div>
   );
 }
 
