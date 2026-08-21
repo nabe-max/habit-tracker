@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 
 import { runGeoScan } from "@/lib/geo/analyzer";
 import { getGeoConfig, isGeoDbConfigured } from "@/lib/geo/env";
-import { listBrandsDueForScan, saveGeoScanRun } from "@/lib/geo/db";
+import { listBrandsDueForScan, saveGeoScanRun, upsertCompetitorSuggestionsFromScan } from "@/lib/geo/db";
 import { formatOpenAIError } from "@/lib/openai";
 
 export async function GET(req: NextRequest) {
@@ -39,6 +39,11 @@ export async function GET(req: NextRequest) {
         );
 
         await saveGeoScanRun(brand.id, result);
+        await upsertCompetitorSuggestionsFromScan(
+          brand.id,
+          brand.competitors,
+          result.suggestedCompetitors,
+        );
         scanned += 1;
       } catch (error) {
         failed += 1;

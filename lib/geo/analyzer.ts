@@ -1,5 +1,7 @@
 import { getOpenAIClient } from "@/lib/openai";
 import { buildGeoPrompts } from "@/lib/geo/prompts";
+import { extractBrandsFromAnswers } from "@/lib/geo/brand-extraction";
+import { computeScanCoOccurrences } from "@/lib/geo/competitors";
 import {
   buildExcerpt,
   buildPositionRankings,
@@ -88,9 +90,10 @@ async function buildRecommendations(params: {
 
 export async function runGeoScan(
   request: GeoScanRequest,
-  options?: { includeRecommendations?: boolean },
+  options?: { includeRecommendations?: boolean; includeBrandExtraction?: boolean },
 ): Promise<GeoScanResult> {
   const includeRecommendations = options?.includeRecommendations ?? true;
+  const includeBrandExtraction = options?.includeBrandExtraction ?? true;
   const competitors = (request.competitors ?? []).map((name) => name.trim()).filter(Boolean);
   const clientCategory = request.clientCategory.trim();
   const prompts = buildGeoPrompts({
@@ -100,28 +103,50 @@ export async function runGeoScan(
   });
 
   const promptResults: GeoScanResult["promptResults"] = [];
-  const trackedNames = [request.brandName, ...competitors];
+  const answers: Array<{ id: string; answer: string }> = [];
 
-  for (const prompt of prompts) {
+  for (const [index, prompt] of prompts.entries()) {
     const answer = await askAi(prompt, clientCategory);
-    const mentioned = detectMention(answer, request.brandName);
-    const rankings = buildRankings(answer, trackedNames);
+    const id = `prompt-${index}`;
+    answers.push({ id, answer });
 
     promptResults.push({
       prompt,
-      mentioned,
+      mentioned: detectMention(answer, request.brandName),
       competitorsMentioned: detectCompetitorMentions(answer, competitors),
+      detectedBrands: [],
       excerpt: buildExcerpt(answer, request.brandName),
       sentiment: classifySentiment(answer, request.brandName),
-      position: positionInRankings(rankings, request.brandName),
-      rankings,
+      position: null,
+      rankings: [],
     });
+  }
+
+  const extractedBrands = includeBrandExtraction
+    ? await extractBrandsFromAnswers(answers, clientCategory)
+    : {};
+
+  for (const [index, result] of promptResults.entries()) {
+    const id = `prompt-${index}`;
+    const answer = answers[index]?.answer ?? "";
+    const detectedBrands = extractedBrands[id] ?? [];
+    result.detectedBrands = detectedBrands;
+
+    const trackedNames = [request.brandName, ...competitors, ...detectedBrands];
+    const rankings = buildRankings(answer, trackedNames);
+    result.rankings = rankings;
+    result.position = positionInRankings(rankings, request.brandName);
   }
 
   const mentionCount = promptResults.filter((result) => result.mentioned).length;
   const visibilityScore = calculateVisibilityScore(mentionCount, promptResults.length);
   const positionScore = averagePosition(promptResults, request.brandName);
   const positionRankings = buildPositionRankings(promptResults, request.brandName, competitors);
+  const suggestedCompetitors = computeScanCoOccurrences(
+    request.brandName,
+    promptResults,
+    competitors,
+  );
   const recommendations = includeRecommendations
     ? await buildRecommendations({
         brandName: request.brandName,
@@ -141,6 +166,7 @@ export async function runGeoScan(
     totalPrompts: promptResults.length,
     competitorScores: rankCompetitors(promptResults, competitors),
     positionRankings,
+    suggestedCompetitors,
     promptResults,
     recommendations,
     scannedAt: new Date().toISOString(),

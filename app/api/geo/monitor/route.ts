@@ -3,7 +3,11 @@ import { randomBytes } from "crypto";
 import { NextResponse } from "next/server";
 
 import { runGeoScan } from "@/lib/geo/analyzer";
-import { createGeoBrand, saveGeoScanRun } from "@/lib/geo/db";
+import {
+  createGeoBrand,
+  saveGeoScanRun,
+  upsertCompetitorSuggestionsFromScan,
+} from "@/lib/geo/db";
 import { isGeoDbConfigured } from "@/lib/geo/env";
 import type { GeoScanRequest } from "@/lib/geo/types";
 import { formatOpenAIError } from "@/lib/openai";
@@ -63,6 +67,7 @@ export async function POST(req: Request) {
     });
 
     await saveGeoScanRun(brand.id, result);
+    await upsertCompetitorSuggestionsFromScan(brand.id, brand.competitors, result.suggestedCompetitors);
 
     return NextResponse.json({
       brandId: brand.id,

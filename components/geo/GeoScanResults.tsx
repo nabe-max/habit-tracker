@@ -1,7 +1,8 @@
 "use client";
 
-import { ArrowRight, BarChart3, TrendingUp } from "lucide-react";
+import { ArrowRight, BarChart3, TrendingUp, Users } from "lucide-react";
 
+import { filterSuggestedCompetitors } from "@/lib/geo/competitors";
 import type { GeoScanResult } from "@/lib/geo/types";
 
 function scoreColor(score: number): string {
@@ -35,6 +36,8 @@ interface GeoScanResultsProps {
 }
 
 export function GeoScanResults({ result, compact = false }: GeoScanResultsProps) {
+  const suggestedCompetitors = filterSuggestedCompetitors(result.suggestedCompetitors ?? []);
+
   return (
     <div className="space-y-6">
       <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
@@ -72,6 +75,29 @@ export function GeoScanResults({ result, compact = false }: GeoScanResultsProps)
           <p className="mt-1 text-sm text-slate-500">{result.clientCategory}</p>
         </div>
       </section>
+
+      {!compact && suggestedCompetitors.length > 0 ? (
+        <section className="rounded-xl border border-amber-100 bg-amber-50/40 p-6">
+          <div className="mb-4 flex items-center gap-2">
+            <Users className="size-5 text-amber-600" />
+            <h3 className="font-semibold text-slate-900">Suggested Brands</h3>
+          </div>
+          <p className="mb-4 text-sm text-slate-600">
+            自社と2回以上一緒に言及されたブランドです。週次監視を開始すると Track / Reject できます。
+          </p>
+          <div className="space-y-2">
+            {suggestedCompetitors.map((item) => (
+              <div
+                key={item.name}
+                className="flex items-center justify-between rounded-lg bg-white px-4 py-3 ring-1 ring-amber-100"
+              >
+                <span className="font-medium text-slate-900">{item.name}</span>
+                <span className="text-sm text-slate-500">{item.mentionCount}回 共起</span>
+              </div>
+            ))}
+          </div>
+        </section>
+      ) : null}
 
       {!compact && result.positionRankings.length > 0 ? (
         <section className="rounded-xl border border-slate-200 bg-white p-6">

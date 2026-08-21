@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { CalendarClock, LayoutDashboard, Loader2 } from "lucide-react";
 
+import { GeoCompetitorSuggestions } from "@/components/geo/GeoCompetitorSuggestions";
 import { GeoPositionChart } from "@/components/geo/GeoPositionChart";
 import { GeoScanResults } from "@/components/geo/GeoScanResults";
 import { GeoVisibilityChart } from "@/components/geo/GeoVisibilityChart";
@@ -136,6 +137,11 @@ export function GeoDashboard({ client, onGoToScan }: GeoDashboardProps) {
           weekOverWeekDelta={history.positionWeekOverWeekDelta}
         />
       </div>
+
+      <GeoCompetitorSuggestions
+        client={client}
+        onCompetitorsUpdated={() => void loadHistory(client)}
+      />
 
       <GeoScanResults result={history.latestResult} />
 

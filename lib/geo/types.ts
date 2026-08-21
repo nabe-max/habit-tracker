@@ -22,10 +22,29 @@ export interface GeoPromptResult {
   prompt: string;
   mentioned: boolean;
   competitorsMentioned: string[];
+  detectedBrands: string[];
   excerpt: string;
   sentiment: "positive" | "neutral" | "negative" | "none";
   position: number | null;
   rankings: GeoRankingEntry[];
+}
+
+export interface GeoSuggestedCompetitor {
+  name: string;
+  mentionCount: number;
+}
+
+export interface GeoCompetitorSuggestionRow {
+  id: string;
+  name: string;
+  mentionCount: number;
+  status: "pending" | "tracked" | "rejected";
+}
+
+export interface GeoCompetitorsResponse {
+  tracked: string[];
+  suggested: GeoCompetitorSuggestionRow[];
+  canAddMore: boolean;
 }
 
 export interface GeoScanResult {
@@ -37,6 +56,7 @@ export interface GeoScanResult {
   totalPrompts: number;
   competitorScores: Array<{ name: string; mentionCount: number; rate: number }>;
   positionRankings: GeoPositionRanking[];
+  suggestedCompetitors: GeoSuggestedCompetitor[];
   promptResults: GeoPromptResult[];
   recommendations: string[];
   scannedAt: string;

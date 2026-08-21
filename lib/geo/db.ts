@@ -1,7 +1,9 @@
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 
+import { normalizeBrandKey, normalizeBrandName } from "@/lib/geo/brand-extraction";
+import { addCompetitor, canAddCompetitor, MAX_COMPETITORS, SUGGESTION_THRESHOLD } from "@/lib/geo/competitors";
 import { getGeoConfig, isGeoDbConfigured } from "@/lib/geo/env";
-import type { GeoScanResult } from "@/lib/geo/types";
+import type { GeoCompetitorsResponse, GeoScanResult, GeoSuggestedCompetitor } from "@/lib/geo/types";
 
 let client: SupabaseClient | null = null;
 
@@ -172,6 +174,208 @@ export async function listGeoScanRuns(brandId: string, limit = 12): Promise<GeoS
 
   if (error) throw error;
   return (data ?? []) as GeoScanRunRow[];
+}
+
+export interface GeoCompetitorSuggestionRow {
+  id: string;
+  brand_id: string;
+  suggested_name: string;
+  mention_count: number;
+  status: "pending" | "tracked" | "rejected";
+  first_seen_at: string;
+  last_seen_at: string;
+}
+
+function isSameBrandName(a: string, b: string): boolean {
+  const left = normalizeBrandKey(a);
+  const right = normalizeBrandKey(b);
+  if (!left || !right) return false;
+  return left === right || left.includes(right) || right.includes(left);
+}
+
+export async function updateGeoBrandCompetitors(
+  brandId: string,
+  competitors: string[],
+): Promise<GeoBrand> {
+  const db = getGeoDb();
+  const { data, error } = await db
+    .from("geo_brands")
+    .update({ competitors: competitors.slice(0, MAX_COMPETITORS) })
+    .eq("id", brandId)
+    .select("*")
+    .single();
+
+  if (error) throw error;
+  return data as GeoBrand;
+}
+
+export async function upsertCompetitorSuggestionsFromScan(
+  brandId: string,
+  trackedCompetitors: string[],
+  scanSuggestions: GeoSuggestedCompetitor[],
+): Promise<void> {
+  if (scanSuggestions.length === 0) return;
+
+  const db = getGeoDb();
+  const { data: existingRows, error } = await db
+    .from("geo_competitor_suggestions")
+    .select("*")
+    .eq("brand_id", brandId);
+
+  if (error) throw error;
+
+  const existing = (existingRows ?? []) as GeoCompetitorSuggestionRow[];
+  const now = new Date().toISOString();
+
+  for (const suggestion of scanSuggestions) {
+    if (trackedCompetitors.some((name) => isSameBrandName(name, suggestion.name))) continue;
+
+    const matched = existing.find((row) =>
+      isSameBrandName(row.suggested_name, suggestion.name),
+    );
+
+    if (matched?.status === "rejected" || matched?.status === "tracked") continue;
+
+    if (matched) {
+      const { error: updateError } = await db
+        .from("geo_competitor_suggestions")
+        .update({
+          mention_count: matched.mention_count + suggestion.mentionCount,
+          last_seen_at: now,
+        })
+        .eq("id", matched.id);
+
+      if (updateError) throw updateError;
+      continue;
+    }
+
+    const { error: insertError } = await db.from("geo_competitor_suggestions").insert({
+      brand_id: brandId,
+      suggested_name: normalizeBrandName(suggestion.name),
+      mention_count: suggestion.mentionCount,
+      status: "pending",
+      first_seen_at: now,
+      last_seen_at: now,
+    });
+
+    if (insertError) throw insertError;
+  }
+}
+
+export async function getCompetitorsState(
+  brandId: string,
+): Promise<GeoCompetitorsResponse> {
+  const db = getGeoDb();
+  const brand = await getGeoBrandById(brandId);
+  if (!brand) {
+    throw new Error("Brand not found");
+  }
+
+  const { data, error } = await db
+    .from("geo_competitor_suggestions")
+    .select("*")
+    .eq("brand_id", brandId)
+    .eq("status", "pending")
+    .gte("mention_count", SUGGESTION_THRESHOLD)
+    .order("mention_count", { ascending: false });
+
+  if (error) throw error;
+
+  const suggested = ((data ?? []) as GeoCompetitorSuggestionRow[]).map((row) => ({
+    id: row.id,
+    name: row.suggested_name,
+    mentionCount: row.mention_count,
+    status: row.status,
+  }));
+
+  return {
+    tracked: brand.competitors ?? [],
+    suggested,
+    canAddMore: canAddCompetitor(brand.competitors ?? []),
+  };
+}
+
+export async function trackCompetitorSuggestion(
+  brandId: string,
+  viewToken: string,
+  name: string,
+): Promise<GeoCompetitorsResponse | null> {
+  const brand = await verifyGeoBrandAccess(brandId, viewToken);
+  if (!brand) return null;
+
+  const trimmed = normalizeBrandName(name);
+  if (!trimmed) return null;
+
+  const nextCompetitors = addCompetitor(brand.competitors ?? [], trimmed);
+  if (nextCompetitors.length === (brand.competitors ?? []).length) {
+    return getCompetitorsState(brandId);
+  }
+
+  const db = getGeoDb();
+  await updateGeoBrandCompetitors(brandId, nextCompetitors);
+
+  const { data: existingRows } = await db
+    .from("geo_competitor_suggestions")
+    .select("*")
+    .eq("brand_id", brandId);
+
+  const matched = ((existingRows ?? []) as GeoCompetitorSuggestionRow[]).find((row) =>
+    isSameBrandName(row.suggested_name, trimmed),
+  );
+
+  if (matched) {
+    await db
+      .from("geo_competitor_suggestions")
+      .update({ status: "tracked", last_seen_at: new Date().toISOString() })
+      .eq("id", matched.id);
+  } else {
+    await db.from("geo_competitor_suggestions").insert({
+      brand_id: brandId,
+      suggested_name: trimmed,
+      mention_count: SUGGESTION_THRESHOLD,
+      status: "tracked",
+    });
+  }
+
+  return getCompetitorsState(brandId);
+}
+
+export async function rejectCompetitorSuggestion(
+  brandId: string,
+  viewToken: string,
+  name: string,
+): Promise<GeoCompetitorsResponse | null> {
+  const brand = await verifyGeoBrandAccess(brandId, viewToken);
+  if (!brand) return null;
+
+  const trimmed = normalizeBrandName(name);
+  if (!trimmed) return null;
+
+  const db = getGeoDb();
+  const { data: existingRows } = await db
+    .from("geo_competitor_suggestions")
+    .select("*")
+    .eq("brand_id", brandId);
+
+  const matched = ((existingRows ?? []) as GeoCompetitorSuggestionRow[]).find((row) =>
+    isSameBrandName(row.suggested_name, trimmed),
+  );
+
+  if (matched) {
+    await db
+      .from("geo_competitor_suggestions")
+      .update({ status: "rejected", last_seen_at: new Date().toISOString() })
+      .eq("id", matched.id);
+  } else {
+    await db.from("geo_competitor_suggestions").insert({
+      brand_id: brandId,
+      suggested_name: trimmed,
+      mention_count: 0,
+      status: "rejected",
+    });
+  }
+
+  return getCompetitorsState(brandId);
 }
 
 export async function deactivateGeoBrand(brandId: string, viewToken: string): Promise<boolean> {
