@@ -23,6 +23,12 @@ function sentimentLabel(sentiment: GeoScanResult["promptResults"][number]["senti
   }
 }
 
+function positionColor(position: number): string {
+  if (position <= 2) return "text-emerald-600";
+  if (position <= 4) return "text-amber-600";
+  return "text-rose-600";
+}
+
 interface GeoScanResultsProps {
   result: GeoScanResult;
   compact?: boolean;
@@ -31,7 +37,7 @@ interface GeoScanResultsProps {
 export function GeoScanResults({ result, compact = false }: GeoScanResultsProps) {
   return (
     <div className="space-y-6">
-      <section className="grid gap-4 sm:grid-cols-3">
+      <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <div className="rounded-xl border border-slate-200 bg-white p-5">
           <p className="text-xs font-medium uppercase tracking-wide text-slate-500">Visibility</p>
           <p className={`mt-2 text-4xl font-bold tabular-nums ${scoreColor(result.visibilityScore)}`}>
@@ -40,12 +46,25 @@ export function GeoScanResults({ result, compact = false }: GeoScanResultsProps)
           </p>
         </div>
         <div className="rounded-xl border border-slate-200 bg-white p-5">
+          <p className="text-xs font-medium uppercase tracking-wide text-slate-500">Position</p>
+          <p
+            className={`mt-2 text-4xl font-bold tabular-nums ${
+              result.positionScore !== null ? positionColor(result.positionScore) : "text-slate-400"
+            }`}
+          >
+            {result.positionScore !== null ? result.positionScore : "—"}
+            {result.positionScore !== null ? (
+              <span className="text-lg text-slate-400"> 位</span>
+            ) : null}
+          </p>
+          <p className="mt-1 text-sm text-slate-500">AI回答内の平均順位</p>
+        </div>
+        <div className="rounded-xl border border-slate-200 bg-white p-5">
           <p className="text-xs font-medium uppercase tracking-wide text-slate-500">言及率</p>
           <p className="mt-2 text-4xl font-bold tabular-nums text-slate-900">
             {result.mentionCount}
             <span className="text-lg text-slate-400">/{result.totalPrompts}</span>
           </p>
-          <p className="mt-1 text-sm text-slate-500">プロンプトでブランド名が出た数</p>
         </div>
         <div className="rounded-xl border border-slate-200 bg-white p-5">
           <p className="text-xs font-medium uppercase tracking-wide text-slate-500">クライアント</p>
@@ -54,7 +73,51 @@ export function GeoScanResults({ result, compact = false }: GeoScanResultsProps)
         </div>
       </section>
 
-      {!compact && result.competitorScores.length > 0 ? (
+      {!compact && result.positionRankings.length > 0 ? (
+        <section className="rounded-xl border border-slate-200 bg-white p-6">
+          <div className="mb-4 flex items-center gap-2">
+            <BarChart3 className="size-5 text-violet-600" />
+            <h3 className="font-semibold text-slate-900">Visibility × Position 比較</h3>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full min-w-[480px] text-left text-sm">
+              <thead>
+                <tr className="border-b border-slate-100 text-xs uppercase tracking-wide text-slate-500">
+                  <th className="pb-3 pr-4 font-medium">ブランド</th>
+                  <th className="pb-3 pr-4 font-medium">Visibility</th>
+                  <th className="pb-3 font-medium">Position</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {result.positionRankings.map((entry) => (
+                  <tr key={entry.name}>
+                    <td className="py-3 pr-4 font-medium text-slate-800">
+                      {entry.name}
+                      {entry.name === result.brandName ? (
+                        <span className="ml-2 rounded bg-violet-100 px-1.5 py-0.5 text-xs text-violet-700">
+                          自社
+                        </span>
+                      ) : null}
+                    </td>
+                    <td className="py-3 pr-4 tabular-nums text-slate-600">{entry.rate}%</td>
+                    <td
+                      className={`py-3 tabular-nums font-semibold ${
+                        entry.avgPosition !== null
+                          ? positionColor(entry.avgPosition)
+                          : "text-slate-400"
+                      }`}
+                    >
+                      {entry.avgPosition !== null ? `${entry.avgPosition} 位` : "—"}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </section>
+      ) : null}
+
+      {!compact && result.competitorScores.length > 0 && result.positionRankings.length === 0 ? (
         <section className="rounded-xl border border-slate-200 bg-white p-6">
           <div className="mb-4 flex items-center gap-2">
             <BarChart3 className="size-5 text-violet-600" />
@@ -105,6 +168,7 @@ export function GeoScanResults({ result, compact = false }: GeoScanResultsProps)
           <table className="w-full min-w-[520px] text-left text-sm">
             <thead>
               <tr className="border-b border-slate-100 text-xs uppercase tracking-wide text-slate-500">
+                <th className="pb-3 pr-4 font-medium">Position</th>
                 <th className="pb-3 pr-4 font-medium">ステータス</th>
                 <th className="pb-3 pr-4 font-medium">プロンプト</th>
                 <th className="pb-3 font-medium">AI回答（抜粋）</th>
@@ -113,6 +177,9 @@ export function GeoScanResults({ result, compact = false }: GeoScanResultsProps)
             <tbody className="divide-y divide-slate-100">
               {result.promptResults.map((item) => (
                 <tr key={item.prompt} className="align-top">
+                  <td className="py-4 pr-4 tabular-nums font-semibold text-slate-700">
+                    {item.position !== null ? `${item.position}位` : "—"}
+                  </td>
                   <td className="py-4 pr-4">
                     <div className="flex flex-col gap-1.5">
                       <span

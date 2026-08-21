@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { CalendarClock, LayoutDashboard, Loader2 } from "lucide-react";
 
+import { GeoPositionChart } from "@/components/geo/GeoPositionChart";
 import { GeoScanResults } from "@/components/geo/GeoScanResults";
 import { GeoVisibilityChart } from "@/components/geo/GeoVisibilityChart";
 import type { GeoHistoryResponse, GeoMonitorClient } from "@/lib/geo/types";
@@ -123,11 +124,18 @@ export function GeoDashboard({ client, onGoToScan }: GeoDashboardProps) {
         ) : null}
       </div>
 
-      <GeoVisibilityChart
-        brandName={client.brandName}
-        runs={history.runs}
-        weekOverWeekDelta={history.weekOverWeekDelta}
-      />
+      <div className="grid gap-6 xl:grid-cols-2">
+        <GeoVisibilityChart
+          brandName={client.brandName}
+          runs={history.runs}
+          weekOverWeekDelta={history.weekOverWeekDelta}
+        />
+        <GeoPositionChart
+          brandName={client.brandName}
+          runs={history.runs}
+          weekOverWeekDelta={history.positionWeekOverWeekDelta}
+        />
+      </div>
 
       <GeoScanResults result={history.latestResult} />
 
@@ -154,7 +162,8 @@ export function GeoDashboard({ client, onGoToScan }: GeoDashboardProps) {
                       {run.visibilityScore}/100
                     </span>
                     <span className="text-slate-500">
-                      {run.mentionCount}/{run.totalPrompts} 言及
+                      Vis {run.visibilityScore}
+                      {run.positionScore !== null ? ` · Pos ${run.positionScore}位` : ""}
                     </span>
                   </div>
                   <div className="h-2 overflow-hidden rounded-full bg-slate-100">

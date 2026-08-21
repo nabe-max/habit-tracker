@@ -18,10 +18,12 @@ create table if not exists geo_scan_runs (
   id uuid primary key default gen_random_uuid(),
   brand_id uuid not null references geo_brands(id) on delete cascade,
   visibility_score int not null,
+  position_score numeric,
   mention_count int not null,
   total_prompts int not null,
   recommendations jsonb not null default '[]',
   competitor_scores jsonb not null default '[]',
+  position_rankings jsonb not null default '[]',
   scanned_at timestamptz not null default now(),
   status text not null default 'completed' check (status in ('completed', 'failed')),
   error_message text
@@ -34,7 +36,9 @@ create table if not exists geo_prompt_results (
   mentioned boolean not null,
   competitors_mentioned text[] not null default '{}',
   excerpt text not null default '',
-  sentiment text not null check (sentiment in ('positive', 'neutral', 'negative', 'none'))
+  sentiment text not null check (sentiment in ('positive', 'neutral', 'negative', 'none')),
+  position int,
+  rankings jsonb not null default '[]'
 );
 
 create index if not exists geo_scan_runs_brand_scanned_idx

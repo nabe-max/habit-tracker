@@ -42,6 +42,54 @@ export function calculateVisibilityScore(mentionCount: number, totalPrompts: num
   return Math.round((mentionCount / totalPrompts) * 100);
 }
 
+export function buildRankings(
+  text: string,
+  trackedNames: string[],
+): Array<{ name: string; position: number }> {
+  const found: Array<{ name: string; index: number }> = [];
+
+  for (const name of trackedNames) {
+    const trimmed = name.trim();
+    if (!trimmed) continue;
+
+    const index = text.toLowerCase().indexOf(trimmed.toLowerCase());
+    if (index !== -1) {
+      found.push({ name: trimmed, index });
+    }
+  }
+
+  found.sort((a, b) => a.index - b.index);
+
+  const seen = new Set<string>();
+  const ordered: Array<{ name: string; index: number }> = [];
+  for (const item of found) {
+    const key = normalizeName(item.name);
+    if (seen.has(key)) continue;
+    seen.add(key);
+    ordered.push(item);
+  }
+
+  return ordered.map((item, index) => ({
+    name: item.name,
+    position: index + 1,
+  }));
+}
+
+export function averagePosition(
+  promptResults: GeoPromptResult[],
+  brandName: string,
+): number | null {
+  const positions = promptResults
+    .flatMap((result) => result.rankings)
+    .filter((entry) => normalizeName(entry.name) === normalizeName(brandName))
+    .map((entry) => entry.position);
+
+  if (positions.length === 0) return null;
+
+  const avg = positions.reduce((sum, value) => sum + value, 0) / positions.length;
+  return Math.round(avg * 10) / 10;
+}
+
 export function rankCompetitors(
   promptResults: GeoPromptResult[],
   competitors: string[],
@@ -62,4 +110,41 @@ export function rankCompetitors(
       };
     })
     .sort((a, b) => b.mentionCount - a.mentionCount);
+}
+
+export function positionInRankings(
+  rankings: Array<{ name: string; position: number }>,
+  brandName: string,
+): number | null {
+  const entry = rankings.find((item) => normalizeName(item.name) === normalizeName(brandName));
+  return entry?.position ?? null;
+}
+
+export function buildPositionRankings(
+  promptResults: GeoPromptResult[],
+  brandName: string,
+  competitors: string[],
+): Array<{ name: string; avgPosition: number | null; mentionCount: number; rate: number }> {
+  const total = promptResults.length;
+  const names = [brandName, ...competitors];
+
+  return names
+    .map((name) => {
+      const mentionCount = promptResults.filter((result) =>
+        result.rankings.some((entry) => normalizeName(entry.name) === normalizeName(name)),
+      ).length;
+
+      return {
+        name,
+        avgPosition: averagePosition(promptResults, name),
+        mentionCount,
+        rate: total > 0 ? Math.round((mentionCount / total) * 100) : 0,
+      };
+    })
+    .sort((a, b) => {
+      if (a.avgPosition === null && b.avgPosition === null) return b.rate - a.rate;
+      if (a.avgPosition === null) return 1;
+      if (b.avgPosition === null) return -1;
+      return a.avgPosition - b.avgPosition;
+    });
 }

@@ -2,10 +2,14 @@ import { getOpenAIClient } from "@/lib/openai";
 import { buildGeoPrompts } from "@/lib/geo/prompts";
 import {
   buildExcerpt,
+  buildPositionRankings,
+  buildRankings,
   calculateVisibilityScore,
   classifySentiment,
   detectCompetitorMentions,
   detectMention,
+  averagePosition,
+  positionInRankings,
   rankCompetitors,
 } from "@/lib/geo/scoring";
 import type { GeoScanRequest, GeoScanResult } from "@/lib/geo/types";
@@ -96,21 +100,28 @@ export async function runGeoScan(
   });
 
   const promptResults: GeoScanResult["promptResults"] = [];
+  const trackedNames = [request.brandName, ...competitors];
 
   for (const prompt of prompts) {
     const answer = await askAi(prompt, clientCategory);
     const mentioned = detectMention(answer, request.brandName);
+    const rankings = buildRankings(answer, trackedNames);
+
     promptResults.push({
       prompt,
       mentioned,
       competitorsMentioned: detectCompetitorMentions(answer, competitors),
       excerpt: buildExcerpt(answer, request.brandName),
       sentiment: classifySentiment(answer, request.brandName),
+      position: positionInRankings(rankings, request.brandName),
+      rankings,
     });
   }
 
   const mentionCount = promptResults.filter((result) => result.mentioned).length;
   const visibilityScore = calculateVisibilityScore(mentionCount, promptResults.length);
+  const positionScore = averagePosition(promptResults, request.brandName);
+  const positionRankings = buildPositionRankings(promptResults, request.brandName, competitors);
   const recommendations = includeRecommendations
     ? await buildRecommendations({
         brandName: request.brandName,
@@ -125,9 +136,11 @@ export async function runGeoScan(
     brandName: request.brandName,
     clientCategory,
     visibilityScore,
+    positionScore,
     mentionCount,
     totalPrompts: promptResults.length,
     competitorScores: rankCompetitors(promptResults, competitors),
+    positionRankings,
     promptResults,
     recommendations,
     scannedAt: new Date().toISOString(),

@@ -22,10 +22,12 @@ export interface GeoScanRunRow {
   id: string;
   brand_id: string;
   visibility_score: number;
+  position_score: number | null;
   mention_count: number;
   total_prompts: number;
   recommendations: string[];
   competitor_scores: GeoScanResult["competitorScores"];
+  position_rankings: GeoScanResult["positionRankings"];
   scanned_at: string;
   status: "completed" | "failed";
   error_message: string | null;
@@ -120,10 +122,12 @@ export async function saveGeoScanRun(
     .insert({
       brand_id: brandId,
       visibility_score: result.visibilityScore,
+      position_score: result.positionScore,
       mention_count: result.mentionCount,
       total_prompts: result.totalPrompts,
       recommendations: result.recommendations,
       competitor_scores: result.competitorScores,
+      position_rankings: result.positionRankings,
       scanned_at: result.scannedAt,
       status: "completed",
     })
@@ -139,6 +143,8 @@ export async function saveGeoScanRun(
     competitors_mentioned: item.competitorsMentioned,
     excerpt: item.excerpt,
     sentiment: item.sentiment,
+    position: item.position,
+    rankings: item.rankings,
   }));
 
   const { error: promptError } = await db.from("geo_prompt_results").insert(promptRows);

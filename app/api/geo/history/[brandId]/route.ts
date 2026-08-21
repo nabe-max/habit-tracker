@@ -6,7 +6,7 @@ import {
   verifyGeoBrandAccess,
 } from "@/lib/geo/db";
 import { isGeoDbConfigured } from "@/lib/geo/env";
-import type { GeoHistoryResponse, GeoScanResult } from "@/lib/geo/types";
+import type { GeoHistoryResponse, GeoRankingEntry, GeoScanResult } from "@/lib/geo/types";
 
 export async function GET(
   req: Request,
@@ -33,6 +33,11 @@ export async function GET(
     const weekOverWeekDelta =
       runs.length >= 2 ? runs[0].visibility_score - runs[1].visibility_score : null;
 
+    const positionWeekOverWeekDelta =
+      runs.length >= 2 && runs[0].position_score !== null && runs[1].position_score !== null
+        ? Number(runs[0].position_score) - Number(runs[1].position_score)
+        : null;
+
     let latestResult: GeoScanResult | null = null;
     if (runs.length > 0) {
       const db = getGeoDb();
@@ -49,9 +54,14 @@ export async function GET(
         brandName: brand.brand_name,
         clientCategory: brand.client_category,
         visibilityScore: latestRun.visibility_score,
+        positionScore:
+          latestRun.position_score !== null && latestRun.position_score !== undefined
+            ? Number(latestRun.position_score)
+            : null,
         mentionCount: latestRun.mention_count,
         totalPrompts: latestRun.total_prompts,
-        competitorScores: latestRun.competitor_scores,
+        competitorScores: latestRun.competitor_scores ?? [],
+        positionRankings: latestRun.position_rankings ?? [],
         recommendations: latestRun.recommendations,
         scannedAt: latestRun.scanned_at,
         promptResults: (promptRows ?? []).map((row) => ({
@@ -60,6 +70,8 @@ export async function GET(
           competitorsMentioned: row.competitors_mentioned ?? [],
           excerpt: row.excerpt ?? "",
           sentiment: row.sentiment,
+          position: row.position ?? null,
+          rankings: (row.rankings ?? []) as GeoRankingEntry[],
         })),
       };
     }
@@ -74,11 +86,16 @@ export async function GET(
       runs: runs.map((run) => ({
         id: run.id,
         visibilityScore: run.visibility_score,
+        positionScore:
+          run.position_score !== null && run.position_score !== undefined
+            ? Number(run.position_score)
+            : null,
         mentionCount: run.mention_count,
         totalPrompts: run.total_prompts,
         scannedAt: run.scanned_at,
       })),
       weekOverWeekDelta,
+      positionWeekOverWeekDelta,
       latestResult,
     };
 
