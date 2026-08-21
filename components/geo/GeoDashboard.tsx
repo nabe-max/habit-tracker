@@ -4,9 +4,8 @@ import { useCallback, useEffect, useState } from "react";
 import { CalendarClock, LayoutDashboard, Loader2 } from "lucide-react";
 
 import { GeoCompetitorSuggestions } from "@/components/geo/GeoCompetitorSuggestions";
-import { GeoPositionChart } from "@/components/geo/GeoPositionChart";
+import { GeoMetricsChart } from "@/components/geo/GeoMetricsChart";
 import { GeoScanResults } from "@/components/geo/GeoScanResults";
-import { GeoVisibilityChart } from "@/components/geo/GeoVisibilityChart";
 import type { GeoHistoryResponse, GeoMonitorClient } from "@/lib/geo/types";
 
 function formatDate(iso: string): string {
@@ -125,18 +124,13 @@ export function GeoDashboard({ client, onGoToScan }: GeoDashboardProps) {
         ) : null}
       </div>
 
-      <div className="grid gap-6 xl:grid-cols-2">
-        <GeoVisibilityChart
-          brandName={client.brandName}
-          runs={history.runs}
-          weekOverWeekDelta={history.weekOverWeekDelta}
-        />
-        <GeoPositionChart
-          brandName={client.brandName}
-          runs={history.runs}
-          weekOverWeekDelta={history.positionWeekOverWeekDelta}
-        />
-      </div>
+      <GeoMetricsChart
+        brandName={client.brandName}
+        trackedCompetitors={history.trackedCompetitors}
+        runs={history.runs}
+        weekOverWeekDelta={history.weekOverWeekDelta}
+        positionWeekOverWeekDelta={history.positionWeekOverWeekDelta}
+      />
 
       <GeoCompetitorSuggestions
         client={client}

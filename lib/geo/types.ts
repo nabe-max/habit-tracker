@@ -76,10 +76,12 @@ export interface GeoHistoryPoint {
   mentionCount: number;
   totalPrompts: number;
   scannedAt: string;
+  positionRankings: GeoPositionRanking[];
 }
 
 export interface GeoHistoryResponse {
   brand: GeoMonitorClient;
+  trackedCompetitors: string[];
   runs: GeoHistoryPoint[];
   weekOverWeekDelta: number | null;
   positionWeekOverWeekDelta: number | null;

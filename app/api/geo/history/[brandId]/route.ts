@@ -85,6 +85,7 @@ export async function GET(
         brandName: brand.brand_name,
         clientCategory: brand.client_category,
       },
+      trackedCompetitors: brand.competitors ?? [],
       runs: runs.map((run) => ({
         id: run.id,
         visibilityScore: run.visibility_score,
@@ -95,6 +96,7 @@ export async function GET(
         mentionCount: run.mention_count,
         totalPrompts: run.total_prompts,
         scannedAt: run.scanned_at,
+        positionRankings: run.position_rankings ?? [],
       })),
       weekOverWeekDelta,
       positionWeekOverWeekDelta,
