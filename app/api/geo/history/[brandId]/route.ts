@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 
 import {
   getGeoDb,
+  getPromptsState,
   listGeoScanRuns,
   verifyGeoBrandAccess,
 } from "@/lib/geo/db";
@@ -78,6 +79,8 @@ export async function GET(
       };
     }
 
+    const promptsState = await getPromptsState(brandId);
+
     const response: GeoHistoryResponse = {
       brand: {
         brandId: brand.id,
@@ -86,6 +89,10 @@ export async function GET(
         clientCategory: brand.client_category,
       },
       trackedCompetitors: brand.competitors ?? [],
+      defaultPrompts: promptsState.defaultPrompts,
+      customPrompts: promptsState.customPrompts,
+      canAddMoreCustomPrompts: promptsState.canAddMore,
+      maxCustomPrompts: promptsState.maxCustomPrompts,
       runs: runs.map((run) => ({
         id: run.id,
         visibilityScore: run.visibility_score,

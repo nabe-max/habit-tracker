@@ -3,6 +3,7 @@
 import { ArrowRight, TrendingUp } from "lucide-react";
 
 import { GeoClientShell, GeoNoScanData } from "@/components/geo/GeoClientShell";
+import { GeoCustomPrompts } from "@/components/geo/GeoCustomPrompts";
 import { GeoPromptsTable } from "@/components/geo/GeoPromptsTable";
 import { useGeoHistory } from "@/components/geo/useGeoHistory";
 import type { GeoMonitorClient } from "@/lib/geo/types";
@@ -24,16 +25,18 @@ interface GeoPromptsPanelProps {
 }
 
 export function GeoPromptsPanel({ client, onGoToScan, onDeleteProject, deleting }: GeoPromptsPanelProps) {
-  const { history, loading, error } = useGeoHistory(client);
+  const { history, loading, error, reload } = useGeoHistory(client);
 
   return (
     <GeoClientShell client={client} loading={loading} error={error} onGoToScan={onGoToScan}>
       {() => {
-        if (!history?.latestResult) {
+        if (!history) {
           return <GeoNoScanData />;
         }
 
         const result = history.latestResult;
+        const totalConfigured =
+          history.defaultPrompts.length + history.customPrompts.length;
 
         return (
           <div className="space-y-6">
@@ -42,11 +45,12 @@ export function GeoPromptsPanel({ client, onGoToScan, onDeleteProject, deleting 
                 <p className="text-sm font-medium text-violet-600">プロンプト</p>
                 <h2 className="text-2xl font-bold text-slate-900">{client!.brandName}</h2>
                 <p className="text-sm text-slate-500">
-                  {result.totalPrompts}件の監視プロンプト · ChatGPT回答を週次チェック
+                  監視 {totalConfigured}件（標準 {history.defaultPrompts.length} + カスタム{" "}
+                  {history.customPrompts.length}）· 週次チェック
                 </p>
               </div>
               <div className="flex flex-col items-end gap-2">
-                {result.scannedAt ? (
+                {result?.scannedAt ? (
                   <p className="text-xs text-slate-400">
                     最終スキャン: {formatDate(result.scannedAt)}
                   </p>
@@ -64,34 +68,42 @@ export function GeoPromptsPanel({ client, onGoToScan, onDeleteProject, deleting 
               </div>
             </div>
 
-            <GeoPromptsTable result={result} />
+            <GeoCustomPrompts
+              client={client!}
+              defaultPrompts={history.defaultPrompts}
+              customPrompts={history.customPrompts}
+              canAddMore={history.canAddMoreCustomPrompts}
+              maxCustomPrompts={history.maxCustomPrompts}
+              onUpdated={() => reload()}
+            />
 
-            {result.recommendations.length > 0 ? (
-              <section className="rounded-xl border border-slate-200 bg-white p-6">
-                <div className="mb-4 flex items-center gap-2">
-                  <TrendingUp className="size-5 text-violet-600" />
-                  <h3 className="font-semibold text-slate-900">改善アクション</h3>
-                </div>
-                <ul className="space-y-3">
-                  {result.recommendations.map((item) => (
-                    <li
-                      key={item}
-                      className="flex items-start gap-3 rounded-lg bg-violet-50 px-4 py-3 text-sm text-slate-700"
-                    >
-                      <ArrowRight className="mt-0.5 size-4 shrink-0 text-violet-600" />
-                      <span>{item}</span>
-                    </li>
-                  ))}
-                </ul>
-              </section>
-            ) : null}
+            {result ? (
+              <>
+                <GeoPromptsTable result={result} customPrompts={history.customPrompts} />
 
-            <section className="rounded-xl border border-dashed border-slate-200 bg-slate-50/60 p-6 text-center">
-              <p className="text-sm font-medium text-slate-700">独自プロンプトの追加</p>
-              <p className="mt-1 text-sm text-slate-500">
-                カスタムプロンプトは近日対応予定です。現在は業種・エリアに合わせた6件を自動監視しています。
-              </p>
-            </section>
+                {result.recommendations.length > 0 ? (
+                  <section className="rounded-xl border border-slate-200 bg-white p-6">
+                    <div className="mb-4 flex items-center gap-2">
+                      <TrendingUp className="size-5 text-violet-600" />
+                      <h3 className="font-semibold text-slate-900">改善アクション</h3>
+                    </div>
+                    <ul className="space-y-3">
+                      {result.recommendations.map((item) => (
+                        <li
+                          key={item}
+                          className="flex items-start gap-3 rounded-lg bg-violet-50 px-4 py-3 text-sm text-slate-700"
+                        >
+                          <ArrowRight className="mt-0.5 size-4 shrink-0 text-violet-600" />
+                          <span>{item}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </section>
+                ) : null}
+              </>
+            ) : (
+              <GeoNoScanData message="スキャン結果がありません。プロンプト追加後に自動再スキャンされます。" />
+            )}
           </div>
         );
       }}

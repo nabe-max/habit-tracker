@@ -3,7 +3,15 @@ import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import { normalizeBrandKey, normalizeBrandName } from "@/lib/geo/brand-extraction";
 import { addCompetitor, canAddCompetitor, MAX_COMPETITORS, SUGGESTION_THRESHOLD } from "@/lib/geo/competitors";
 import { getGeoConfig, isGeoDbConfigured } from "@/lib/geo/env";
-import type { GeoCompetitorsResponse, GeoScanResult, GeoSuggestedCompetitor } from "@/lib/geo/types";
+import {
+  buildDefaultGeoPrompts,
+  isDuplicatePrompt,
+  MAX_CUSTOM_PROMPTS,
+  MAX_PROMPT_LENGTH,
+  MIN_PROMPT_LENGTH,
+  normalizePromptText,
+} from "@/lib/geo/prompts";
+import type { GeoCompetitorsResponse, GeoPromptsResponse, GeoScanResult, GeoSuggestedCompetitor } from "@/lib/geo/types";
 
 let client: SupabaseClient | null = null;
 
@@ -15,6 +23,7 @@ export interface GeoBrand {
   location: string | null;
   website: string | null;
   competitors: string[];
+  custom_prompts: string[];
   is_active: boolean;
   last_scanned_at: string | null;
   created_at: string;
@@ -68,6 +77,7 @@ export async function createGeoBrand(input: {
       location: input.location ?? null,
       website: input.website ?? null,
       competitors: input.competitors,
+      custom_prompts: [],
     })
     .select("*")
     .single();
@@ -338,6 +348,106 @@ export async function trackCompetitorSuggestion(
   }
 
   return getCompetitorsState(brandId);
+}
+
+function buildPromptsResponse(brand: GeoBrand): GeoPromptsResponse {
+  const customPrompts = brand.custom_prompts ?? [];
+  return {
+    defaultPrompts: buildDefaultGeoPrompts({
+      brandName: brand.brand_name,
+      clientCategory: brand.client_category,
+      location: brand.location ?? undefined,
+    }),
+    customPrompts,
+    canAddMore: customPrompts.length < MAX_CUSTOM_PROMPTS,
+    maxCustomPrompts: MAX_CUSTOM_PROMPTS,
+  };
+}
+
+export async function getPromptsState(brandId: string): Promise<GeoPromptsResponse> {
+  const brand = await getGeoBrandById(brandId);
+  if (!brand) {
+    throw new Error("Brand not found");
+  }
+  return buildPromptsResponse(brand);
+}
+
+export async function addCustomPrompt(
+  brandId: string,
+  viewToken: string,
+  prompt: string,
+): Promise<GeoPromptsResponse | null> {
+  const brand = await verifyGeoBrandAccess(brandId, viewToken);
+  if (!brand) return null;
+
+  const normalized = normalizePromptText(prompt);
+  if (normalized.length < MIN_PROMPT_LENGTH) {
+    throw new Error(`プロンプトは${MIN_PROMPT_LENGTH}文字以上で入力してください`);
+  }
+  if (normalized.length > MAX_PROMPT_LENGTH) {
+    throw new Error(`プロンプトは${MAX_PROMPT_LENGTH}文字以内で入力してください`);
+  }
+
+  const customPrompts = brand.custom_prompts ?? [];
+  if (customPrompts.length >= MAX_CUSTOM_PROMPTS) {
+    throw new Error(`カスタムプロンプトは最大${MAX_CUSTOM_PROMPTS}件までです`);
+  }
+
+  const defaults = buildDefaultGeoPrompts({
+    brandName: brand.brand_name,
+    clientCategory: brand.client_category,
+    location: brand.location ?? undefined,
+  });
+
+  if (isDuplicatePrompt(normalized, [...defaults, ...customPrompts])) {
+    throw new Error("同じプロンプトが既に登録されています");
+  }
+
+  const db = getGeoDb();
+  const nextPrompts = [...customPrompts, normalized];
+  const { data, error } = await db
+    .from("geo_brands")
+    .update({ custom_prompts: nextPrompts })
+    .eq("id", brandId)
+    .select("*")
+    .single();
+
+  if (error) throw error;
+  return buildPromptsResponse(data as GeoBrand);
+}
+
+export async function removeCustomPrompt(
+  brandId: string,
+  viewToken: string,
+  prompt: string,
+): Promise<GeoPromptsResponse | null> {
+  const brand = await verifyGeoBrandAccess(brandId, viewToken);
+  if (!brand) return null;
+
+  const normalized = normalizePromptText(prompt);
+  const customPrompts = brand.custom_prompts ?? [];
+  const nextPrompts = customPrompts.filter(
+    (item) => promptKey(item) !== promptKey(normalized),
+  );
+
+  if (nextPrompts.length === customPrompts.length) {
+    throw new Error("カスタムプロンプトが見つかりません");
+  }
+
+  const db = getGeoDb();
+  const { data, error } = await db
+    .from("geo_brands")
+    .update({ custom_prompts: nextPrompts })
+    .eq("id", brandId)
+    .select("*")
+    .single();
+
+  if (error) throw error;
+  return buildPromptsResponse(data as GeoBrand);
+}
+
+function promptKey(prompt: string): string {
+  return normalizePromptText(prompt).toLowerCase();
 }
 
 export async function rejectCompetitorSuggestion(

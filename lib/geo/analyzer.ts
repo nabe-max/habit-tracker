@@ -1,5 +1,5 @@
 import { getOpenAIClient } from "@/lib/openai";
-import { buildGeoPrompts } from "@/lib/geo/prompts";
+import { resolveGeoPrompts } from "@/lib/geo/prompts";
 import { extractBrandsFromAnswers } from "@/lib/geo/brand-extraction";
 import { computeScanCoOccurrences } from "@/lib/geo/competitors";
 import {
@@ -96,10 +96,11 @@ export async function runGeoScan(
   const includeBrandExtraction = options?.includeBrandExtraction ?? true;
   const competitors = (request.competitors ?? []).map((name) => name.trim()).filter(Boolean);
   const clientCategory = request.clientCategory.trim();
-  const prompts = buildGeoPrompts({
+  const prompts = resolveGeoPrompts({
     brandName: request.brandName,
     clientCategory,
     location: request.location,
+    customPrompts: request.customPrompts,
   });
 
   const promptResults: GeoScanResult["promptResults"] = [];

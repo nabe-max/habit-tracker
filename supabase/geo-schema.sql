@@ -9,6 +9,7 @@ create table if not exists geo_brands (
   location text,
   website text,
   competitors text[] not null default '{}',
+  custom_prompts text[] not null default '{}',
   is_active boolean not null default true,
   last_scanned_at timestamptz,
   created_at timestamptz not null default now()

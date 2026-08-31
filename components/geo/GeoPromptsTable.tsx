@@ -33,9 +33,15 @@ function sentimentColor(sentiment: GeoPromptResult["sentiment"]): string {
 
 interface GeoPromptsTableProps {
   result: GeoScanResult;
+  customPrompts?: string[];
 }
 
-export function GeoPromptsTable({ result }: GeoPromptsTableProps) {
+function isCustomPrompt(prompt: string, customPrompts: string[]): boolean {
+  const key = prompt.trim().toLowerCase();
+  return customPrompts.some((item) => item.trim().toLowerCase() === key);
+}
+
+export function GeoPromptsTable({ result, customPrompts = [] }: GeoPromptsTableProps) {
   const [expanded, setExpanded] = useState<string | null>(null);
 
   return (
@@ -84,7 +90,16 @@ export function GeoPromptsTable({ result }: GeoPromptsTableProps) {
                     </span>
                   </div>
                 </td>
-                <td className="px-6 py-4 font-medium text-slate-800">{item.prompt}</td>
+                  <td className="px-6 py-4 font-medium text-slate-800">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span>{item.prompt}</span>
+                      {isCustomPrompt(item.prompt, customPrompts) ? (
+                        <span className="rounded-full bg-violet-100 px-2 py-0.5 text-xs font-medium text-violet-700">
+                          カスタム
+                        </span>
+                      ) : null}
+                    </div>
+                  </td>
                 <td className="px-6 py-4 text-slate-600">{item.excerpt}</td>
               </tr>
             ))}
@@ -105,6 +120,11 @@ export function GeoPromptsTable({ result }: GeoPromptsTableProps) {
                 <div className="min-w-0 flex-1">
                   <p className="text-sm font-medium text-slate-900">{item.prompt}</p>
                   <div className="mt-2 flex flex-wrap gap-2">
+                    {isCustomPrompt(item.prompt, customPrompts) ? (
+                      <span className="rounded-full bg-violet-100 px-2.5 py-0.5 text-xs font-medium text-violet-700">
+                        カスタム
+                      </span>
+                    ) : null}
                     <span
                       className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${
                         item.mentioned

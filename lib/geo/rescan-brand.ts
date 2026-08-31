@@ -16,6 +16,7 @@ export async function rescanGeoBrand(brandId: string): Promise<void> {
       location: brand.location ?? undefined,
       website: brand.website ?? undefined,
       competitors: brand.competitors ?? [],
+      customPrompts: brand.custom_prompts ?? [],
     },
     { includeRecommendations: false },
   );

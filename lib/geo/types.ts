@@ -4,6 +4,7 @@ export interface GeoScanRequest {
   website?: string;
   location?: string;
   competitors?: string[];
+  customPrompts?: string[];
 }
 
 export interface GeoRankingEntry {
@@ -48,6 +49,14 @@ export interface GeoCompetitorsResponse {
   rescanStarted?: boolean;
 }
 
+export interface GeoPromptsResponse {
+  defaultPrompts: string[];
+  customPrompts: string[];
+  canAddMore: boolean;
+  maxCustomPrompts: number;
+  rescanStarted?: boolean;
+}
+
 export interface GeoScanResult {
   brandName: string;
   clientCategory: string;
@@ -83,6 +92,10 @@ export interface GeoHistoryPoint {
 export interface GeoHistoryResponse {
   brand: GeoMonitorClient;
   trackedCompetitors: string[];
+  defaultPrompts: string[];
+  customPrompts: string[];
+  canAddMoreCustomPrompts: boolean;
+  maxCustomPrompts: number;
   runs: GeoHistoryPoint[];
   weekOverWeekDelta: number | null;
   positionWeekOverWeekDelta: number | null;
