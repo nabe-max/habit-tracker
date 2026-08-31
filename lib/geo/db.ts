@@ -77,7 +77,6 @@ export async function createGeoBrand(input: {
       location: input.location ?? null,
       website: input.website ?? null,
       competitors: input.competitors,
-      custom_prompts: [],
     })
     .select("*")
     .single();

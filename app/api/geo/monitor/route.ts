@@ -9,8 +9,10 @@ import {
   upsertCompetitorSuggestionsFromScan,
 } from "@/lib/geo/db";
 import { isGeoDbConfigured } from "@/lib/geo/env";
+import { formatGeoServiceError } from "@/lib/geo/errors";
 import type { GeoScanRequest } from "@/lib/geo/types";
-import { formatOpenAIError } from "@/lib/openai";
+
+export const maxDuration = 60;
 
 export async function POST(req: Request) {
   if (!isGeoDbConfigured()) {
@@ -78,6 +80,6 @@ export async function POST(req: Request) {
     });
   } catch (error) {
     console.error("[POST /api/geo/monitor]", error);
-    return NextResponse.json({ error: formatOpenAIError(error) }, { status: 500 });
+    return NextResponse.json({ error: formatGeoServiceError(error) }, { status: 500 });
   }
 }
