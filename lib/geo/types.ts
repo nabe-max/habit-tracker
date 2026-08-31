@@ -45,6 +45,7 @@ export interface GeoCompetitorsResponse {
   tracked: string[];
   suggested: GeoCompetitorSuggestionRow[];
   canAddMore: boolean;
+  rescanStarted?: boolean;
 }
 
 export interface GeoScanResult {

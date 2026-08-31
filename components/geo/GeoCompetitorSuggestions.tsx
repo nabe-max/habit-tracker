@@ -10,7 +10,7 @@ import type { GeoCompetitorsResponse, GeoMonitorClient } from "@/lib/geo/types";
 
 interface GeoCompetitorSuggestionsProps {
   client: GeoMonitorClient;
-  onCompetitorsUpdated?: () => void;
+  onCompetitorsUpdated?: (options?: { rescanStarted?: boolean }) => void;
 }
 
 export function GeoCompetitorSuggestions({
@@ -63,12 +63,16 @@ export function GeoCompetitorSuggestions({
       }
 
       setState(data);
-      onCompetitorsUpdated?.();
+      onCompetitorsUpdated?.({ rescanStarted: data.rescanStarted });
       toast.success(
         action === "track"
-          ? `${name} を競合に追加しました。グラフ反映には再スキャンが必要です`
+          ? `${name} を競合に追加しました。30〜60秒後にグラフへ反映されます`
           : `${name} を除外しました`,
       );
+
+      if (action === "track" && data.rescanStarted) {
+        window.setTimeout(() => onCompetitorsUpdated?.(), 45000);
+      }
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "更新に失敗しました");
     } finally {
@@ -109,7 +113,7 @@ export function GeoCompetitorSuggestions({
 
       {tracked.length > 0 ? (
         <p className="mb-5 text-xs text-slate-500">
-          Track した競合は、<strong>次回スキャン以降</strong>のグラフに反映されます。今すぐ反映するには cron-job.org で TEST RUN してください。
+          Track すると<strong>自動で再スキャン</strong>され、競合がグラフに反映されます（30〜60秒）。
         </p>
       ) : null}
 

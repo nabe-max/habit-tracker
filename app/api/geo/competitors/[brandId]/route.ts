@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+import { after, NextResponse } from "next/server";
 
 import {
   getCompetitorsState,
@@ -7,6 +7,9 @@ import {
   verifyGeoBrandAccess,
 } from "@/lib/geo/db";
 import { isGeoDbConfigured } from "@/lib/geo/env";
+import { rescanGeoBrand } from "@/lib/geo/rescan-brand";
+
+export const maxDuration = 60;
 
 export async function GET(
   req: Request,
@@ -75,7 +78,17 @@ export async function POST(
       return NextResponse.json({ error: "アクセスできません" }, { status: 403 });
     }
 
-    return NextResponse.json(state);
+    if (action === "track") {
+      after(async () => {
+        try {
+          await rescanGeoBrand(brandId);
+        } catch (error) {
+          console.error("[POST /api/geo/competitors] auto-rescan failed", error);
+        }
+      });
+    }
+
+    return NextResponse.json({ ...state, rescanStarted: action === "track" });
   } catch (error) {
     console.error("[POST /api/geo/competitors]", error);
     return NextResponse.json({ error: "競合の更新に失敗しました" }, { status: 500 });
