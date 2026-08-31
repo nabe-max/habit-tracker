@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 
+import { isCronAuthorized } from "@/lib/cron-auth";
 import { listDueMessages, markMessageSent } from "@/lib/morning/db";
 import { sendMorningMotivationEmail } from "@/lib/morning/email";
 import { getMorningConfig, isMorningConfigured } from "@/lib/morning/env";
@@ -9,9 +10,8 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: "Not configured" }, { status: 503 });
   }
 
-  const authHeader = req.headers.get("authorization");
-  const expected = `Bearer ${getMorningConfig().cronSecret}`;
-  if (!getMorningConfig().cronSecret || authHeader !== expected) {
+  const cronSecret = getMorningConfig().cronSecret.trim();
+  if (!isCronAuthorized(req, cronSecret)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 

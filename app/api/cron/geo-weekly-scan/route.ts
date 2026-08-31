@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 
+import { isCronAuthorized } from "@/lib/cron-auth";
 import { runGeoScan } from "@/lib/geo/analyzer";
 import { getGeoConfig, isGeoDbConfigured } from "@/lib/geo/env";
 import { listBrandsDueForScan, saveGeoScanRun, upsertCompetitorSuggestionsFromScan } from "@/lib/geo/db";
@@ -14,9 +15,8 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: "OpenAI API key not configured" }, { status: 503 });
   }
 
-  const authHeader = req.headers.get("authorization");
-  const expected = `Bearer ${getGeoConfig().cronSecret}`;
-  if (!getGeoConfig().cronSecret || authHeader !== expected) {
+  const cronSecret = getGeoConfig().cronSecret;
+  if (!isCronAuthorized(req, cronSecret)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 

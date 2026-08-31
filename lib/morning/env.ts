@@ -4,7 +4,7 @@ export function getMorningConfig() {
     supabaseServiceRoleKey: process.env.SUPABASE_SERVICE_ROLE_KEY ?? "",
     resendApiKey: process.env.RESEND_API_KEY ?? "",
     sessionSecret: process.env.MORNING_SESSION_SECRET ?? "",
-    cronSecret: process.env.CRON_SECRET ?? "",
+    cronSecret: process.env.CRON_SECRET?.trim() ?? "",
     fromEmail: process.env.MORNING_FROM_EMAIL ?? "Morning You <onboarding@resend.dev>",
     appUrl: process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000",
   };
