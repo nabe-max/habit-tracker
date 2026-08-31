@@ -387,3 +387,13 @@ export async function deactivateGeoBrand(brandId: string, viewToken: string): Pr
   if (error) throw error;
   return true;
 }
+
+export async function deleteGeoBrand(brandId: string, viewToken: string): Promise<boolean> {
+  const brand = await verifyGeoBrandAccess(brandId, viewToken);
+  if (!brand) return false;
+
+  const db = getGeoDb();
+  const { error } = await db.from("geo_brands").delete().eq("id", brandId);
+  if (error) throw error;
+  return true;
+}

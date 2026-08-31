@@ -2,14 +2,18 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { LayoutDashboard, MessageSquareText, PlusCircle, Sparkles } from "lucide-react";
+import { toast } from "sonner";
 
+import { GeoClientList } from "@/components/geo/GeoClientList";
 import { GeoDashboard } from "@/components/geo/GeoDashboard";
 import { GeoPromptsPanel } from "@/components/geo/GeoPromptsPanel";
 import { GeoScanPanel } from "@/components/geo/GeoScanPanel";
 import type { GeoMonitorClient } from "@/lib/geo/types";
 import {
+  clearActiveClientId,
   loadActiveClientId,
   loadMonitorClients,
+  removeMonitorClient,
   saveActiveClientId,
   saveMonitorClient,
 } from "@/lib/geo/storage";
@@ -26,6 +30,7 @@ export function GeoApp() {
   const [tab, setTab] = useState<GeoTab>("overview");
   const [clients, setClients] = useState<GeoMonitorClient[]>([]);
   const [activeClient, setActiveClient] = useState<GeoMonitorClient | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
 
   useEffect(() => {
     const loaded = loadMonitorClients();
@@ -47,6 +52,50 @@ export function GeoApp() {
     setClients(next);
     selectClient(client);
   }, [selectClient]);
+
+  const handleDeleteClient = useCallback(
+    async (client: GeoMonitorClient) => {
+      const confirmed = window.confirm(
+        `「${client.brandName}」の監視を停止して削除しますか？\nスキャン履歴も削除され、元に戻せません。`,
+      );
+      if (!confirmed) return;
+
+      setDeletingId(client.brandId);
+
+      try {
+        const res = await fetch(`/api/geo/brands/${client.brandId}`, {
+          method: "DELETE",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ token: client.viewToken }),
+        });
+
+        const data = (await res.json()) as { error?: string };
+        if (!res.ok) {
+          throw new Error(data.error ?? "削除に失敗しました");
+        }
+
+        const next = removeMonitorClient(client.brandId);
+        setClients(next);
+
+        if (activeClient?.brandId === client.brandId) {
+          const newActive = next[0] ?? null;
+          setActiveClient(newActive);
+          if (newActive) {
+            saveActiveClientId(newActive.brandId);
+          } else {
+            clearActiveClientId();
+          }
+        }
+
+        toast.success(`「${client.brandName}」を削除しました`);
+      } catch (error) {
+        toast.error(error instanceof Error ? error.message : "削除に失敗しました");
+      } finally {
+        setDeletingId(null);
+      }
+    },
+    [activeClient],
+  );
 
   return (
     <div className="min-h-[calc(100vh-73px)]">
@@ -81,23 +130,13 @@ export function GeoApp() {
               {clients.length === 0 ? (
                 <p className="px-3 text-xs text-slate-400">まだありません</p>
               ) : (
-                <div className="space-y-1">
-                  {clients.map((client) => (
-                    <button
-                      key={client.brandId}
-                      type="button"
-                      onClick={() => selectClient(client)}
-                      className={`w-full rounded-lg px-3 py-2 text-left transition-colors ${
-                        activeClient?.brandId === client.brandId
-                          ? "bg-violet-50 ring-1 ring-violet-200"
-                          : "hover:bg-slate-50"
-                      }`}
-                    >
-                      <p className="truncate text-sm font-medium text-slate-800">{client.brandName}</p>
-                      <p className="truncate text-xs text-slate-500">{client.clientCategory}</p>
-                    </button>
-                  ))}
-                </div>
+                <GeoClientList
+                  clients={clients}
+                  activeClientId={activeClient?.brandId ?? null}
+                  deletingId={deletingId}
+                  onSelect={selectClient}
+                  onDelete={(client) => void handleDeleteClient(client)}
+                />
               )}
             </div>
           </div>
@@ -122,28 +161,34 @@ export function GeoApp() {
           </div>
 
           {clients.length > 0 && tab !== "scan" ? (
-            <div className="mb-6 flex gap-2 overflow-x-auto md:hidden">
-              {clients.map((client) => (
-                <button
-                  key={client.brandId}
-                  type="button"
-                  onClick={() => selectClient(client)}
-                  className={`shrink-0 rounded-full px-3 py-1.5 text-sm ${
-                    activeClient?.brandId === client.brandId
-                      ? "bg-violet-100 text-violet-800"
-                      : "bg-white text-slate-600 ring-1 ring-slate-200"
-                  }`}
-                >
-                  {client.brandName}
-                </button>
-              ))}
-            </div>
+            <GeoClientList
+              variant="mobile"
+              clients={clients}
+              activeClientId={activeClient?.brandId ?? null}
+              deletingId={deletingId}
+              onSelect={selectClient}
+              onDelete={(client) => void handleDeleteClient(client)}
+            />
           ) : null}
 
           {tab === "overview" ? (
-            <GeoDashboard client={activeClient} onGoToScan={() => setTab("scan")} />
+            <GeoDashboard
+              client={activeClient}
+              onGoToScan={() => setTab("scan")}
+              onDeleteProject={
+                activeClient ? () => void handleDeleteClient(activeClient) : undefined
+              }
+              deleting={deletingId === activeClient?.brandId}
+            />
           ) : tab === "prompts" ? (
-            <GeoPromptsPanel client={activeClient} onGoToScan={() => setTab("scan")} />
+            <GeoPromptsPanel
+              client={activeClient}
+              onGoToScan={() => setTab("scan")}
+              onDeleteProject={
+                activeClient ? () => void handleDeleteClient(activeClient) : undefined
+              }
+              deleting={deletingId === activeClient?.brandId}
+            />
           ) : (
             <GeoScanPanel onMonitorStarted={handleMonitorStarted} />
           )}

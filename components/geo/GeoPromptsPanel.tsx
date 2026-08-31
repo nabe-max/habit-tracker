@@ -19,9 +19,11 @@ function formatDate(iso: string): string {
 interface GeoPromptsPanelProps {
   client: GeoMonitorClient | null;
   onGoToScan: () => void;
+  onDeleteProject?: () => void;
+  deleting?: boolean;
 }
 
-export function GeoPromptsPanel({ client, onGoToScan }: GeoPromptsPanelProps) {
+export function GeoPromptsPanel({ client, onGoToScan, onDeleteProject, deleting }: GeoPromptsPanelProps) {
   const { history, loading, error } = useGeoHistory(client);
 
   return (
@@ -43,11 +45,23 @@ export function GeoPromptsPanel({ client, onGoToScan }: GeoPromptsPanelProps) {
                   {result.totalPrompts}件の監視プロンプト · ChatGPT回答を週次チェック
                 </p>
               </div>
-              {result.scannedAt ? (
-                <p className="text-xs text-slate-400">
-                  最終スキャン: {formatDate(result.scannedAt)}
-                </p>
-              ) : null}
+              <div className="flex flex-col items-end gap-2">
+                {result.scannedAt ? (
+                  <p className="text-xs text-slate-400">
+                    最終スキャン: {formatDate(result.scannedAt)}
+                  </p>
+                ) : null}
+                {onDeleteProject ? (
+                  <button
+                    type="button"
+                    onClick={onDeleteProject}
+                    disabled={deleting}
+                    className="text-xs text-rose-600 hover:text-rose-700 disabled:opacity-50 md:hidden"
+                  >
+                    {deleting ? "削除中…" : "プロジェクトを削除"}
+                  </button>
+                ) : null}
+              </div>
             </div>
 
             <GeoPromptsTable result={result} />

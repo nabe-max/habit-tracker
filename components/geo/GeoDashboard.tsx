@@ -28,9 +28,11 @@ function scoreColor(score: number): string {
 interface GeoDashboardProps {
   client: GeoMonitorClient | null;
   onGoToScan: () => void;
+  onDeleteProject?: () => void;
+  deleting?: boolean;
 }
 
-export function GeoDashboard({ client, onGoToScan }: GeoDashboardProps) {
+export function GeoDashboard({ client, onGoToScan, onDeleteProject, deleting }: GeoDashboardProps) {
   const { history, loading, error, reload } = useGeoHistory(client);
 
   return (
@@ -52,11 +54,23 @@ export function GeoDashboard({ client, onGoToScan }: GeoDashboardProps) {
                   {client!.clientCategory} · 週次プロンプト監視
                 </p>
               </div>
-              {history.latestResult.scannedAt ? (
-                <p className="text-xs text-slate-400">
-                  最終スキャン: {formatDate(history.latestResult.scannedAt)}
-                </p>
-              ) : null}
+              <div className="flex flex-col items-end gap-2">
+                {history.latestResult.scannedAt ? (
+                  <p className="text-xs text-slate-400">
+                    最終スキャン: {formatDate(history.latestResult.scannedAt)}
+                  </p>
+                ) : null}
+                {onDeleteProject ? (
+                  <button
+                    type="button"
+                    onClick={onDeleteProject}
+                    disabled={deleting}
+                    className="text-xs text-rose-600 hover:text-rose-700 disabled:opacity-50 md:hidden"
+                  >
+                    {deleting ? "削除中…" : "プロジェクトを削除"}
+                  </button>
+                ) : null}
+              </div>
             </div>
 
             <GeoOverviewSummary result={history.latestResult} />

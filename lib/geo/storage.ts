@@ -22,6 +22,16 @@ export function saveMonitorClient(client: GeoMonitorClient): GeoMonitorClient[] 
   return next;
 }
 
+export function removeMonitorClient(brandId: string): GeoMonitorClient[] {
+  const next = loadMonitorClients().filter((item) => item.brandId !== brandId);
+  localStorage.setItem(CLIENTS_KEY, JSON.stringify(next));
+  return next;
+}
+
+export function clearActiveClientId(): void {
+  localStorage.removeItem(ACTIVE_CLIENT_KEY);
+}
+
 export function loadActiveClientId(): string | null {
   if (typeof window === "undefined") return null;
   return localStorage.getItem(ACTIVE_CLIENT_KEY);
