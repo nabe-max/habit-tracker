@@ -5,7 +5,7 @@ import { GeoApp, GeoAppHero } from "@/components/geo/GeoApp";
 export const metadata: Metadata = {
   title: "GEO Lab | 代理店向け AI検索可視化",
   description:
-    "SEO・集客代行の代理店向け。ChatGPT等のAI可視性をOverviewダッシュボードで常時確認し、週次プロンプト監視で推移を追跡します。",
+    "SEO・集客代行の代理店向け。概要でAI可視性の推移を確認し、プロンプト別の回答詳細を週次監視します。",
 };
 
 export default function GeoPage() {

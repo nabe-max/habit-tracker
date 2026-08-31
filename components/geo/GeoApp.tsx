@@ -1,9 +1,10 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { LayoutDashboard, PlusCircle, Sparkles } from "lucide-react";
+import { LayoutDashboard, MessageSquareText, PlusCircle, Sparkles } from "lucide-react";
 
 import { GeoDashboard } from "@/components/geo/GeoDashboard";
+import { GeoPromptsPanel } from "@/components/geo/GeoPromptsPanel";
 import { GeoScanPanel } from "@/components/geo/GeoScanPanel";
 import type { GeoMonitorClient } from "@/lib/geo/types";
 import {
@@ -13,7 +14,13 @@ import {
   saveMonitorClient,
 } from "@/lib/geo/storage";
 
-type GeoTab = "overview" | "scan";
+type GeoTab = "overview" | "prompts" | "scan";
+
+const NAV_ITEMS: Array<{ id: GeoTab; label: string; icon: typeof LayoutDashboard }> = [
+  { id: "overview", label: "概要", icon: LayoutDashboard },
+  { id: "prompts", label: "プロンプト", icon: MessageSquareText },
+  { id: "scan", label: "新規診断", icon: PlusCircle },
+];
 
 export function GeoApp() {
   const [tab, setTab] = useState<GeoTab>("overview");
@@ -46,31 +53,25 @@ export function GeoApp() {
       <div className="mx-auto flex max-w-7xl">
         <aside className="hidden w-60 shrink-0 border-r border-slate-200 bg-white md:block">
           <div className="sticky top-0 p-4">
+            <p className="mb-3 px-3 text-xs font-semibold uppercase tracking-wide text-slate-400">
+              ページ
+            </p>
             <nav className="space-y-1">
-              <button
-                type="button"
-                onClick={() => setTab("overview")}
-                className={`flex w-full items-center gap-2 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors ${
-                  tab === "overview"
-                    ? "bg-violet-100 text-violet-800"
-                    : "text-slate-600 hover:bg-slate-50"
-                }`}
-              >
-                <LayoutDashboard className="size-4" />
-                Overview
-              </button>
-              <button
-                type="button"
-                onClick={() => setTab("scan")}
-                className={`flex w-full items-center gap-2 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors ${
-                  tab === "scan"
-                    ? "bg-violet-100 text-violet-800"
-                    : "text-slate-600 hover:bg-slate-50"
-                }`}
-              >
-                <PlusCircle className="size-4" />
-                新規診断
-              </button>
+              {NAV_ITEMS.map(({ id, label, icon: Icon }) => (
+                <button
+                  key={id}
+                  type="button"
+                  onClick={() => setTab(id)}
+                  className={`flex w-full items-center gap-2 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors ${
+                    tab === id
+                      ? "bg-violet-100 text-violet-800"
+                      : "text-slate-600 hover:bg-slate-50"
+                  }`}
+                >
+                  <Icon className="size-4" />
+                  {label}
+                </button>
+              ))}
             </nav>
 
             <div className="mt-8">
@@ -104,27 +105,23 @@ export function GeoApp() {
 
         <main className="min-w-0 flex-1 px-4 py-6 sm:px-6 sm:py-8">
           <div className="mb-6 flex gap-2 md:hidden">
-            <button
-              type="button"
-              onClick={() => setTab("overview")}
-              className={`flex-1 rounded-lg px-3 py-2 text-sm font-medium ${
-                tab === "overview" ? "bg-violet-600 text-white" : "bg-white text-slate-600 ring-1 ring-slate-200"
-              }`}
-            >
-              Overview
-            </button>
-            <button
-              type="button"
-              onClick={() => setTab("scan")}
-              className={`flex-1 rounded-lg px-3 py-2 text-sm font-medium ${
-                tab === "scan" ? "bg-violet-600 text-white" : "bg-white text-slate-600 ring-1 ring-slate-200"
-              }`}
-            >
-              新規診断
-            </button>
+            {NAV_ITEMS.map(({ id, label }) => (
+              <button
+                key={id}
+                type="button"
+                onClick={() => setTab(id)}
+                className={`flex-1 rounded-lg px-3 py-2 text-sm font-medium ${
+                  tab === id
+                    ? "bg-violet-600 text-white"
+                    : "bg-white text-slate-600 ring-1 ring-slate-200"
+                }`}
+              >
+                {label}
+              </button>
+            ))}
           </div>
 
-          {clients.length > 0 && tab === "overview" ? (
+          {clients.length > 0 && tab !== "scan" ? (
             <div className="mb-6 flex gap-2 overflow-x-auto md:hidden">
               {clients.map((client) => (
                 <button
@@ -145,6 +142,8 @@ export function GeoApp() {
 
           {tab === "overview" ? (
             <GeoDashboard client={activeClient} onGoToScan={() => setTab("scan")} />
+          ) : tab === "prompts" ? (
+            <GeoPromptsPanel client={activeClient} onGoToScan={() => setTab("scan")} />
           ) : (
             <GeoScanPanel onMonitorStarted={handleMonitorStarted} />
           )}
@@ -166,7 +165,7 @@ export function GeoAppHero() {
           AI検索可視化ダッシュボード
         </h1>
         <p className="mt-2 max-w-2xl text-sm text-slate-600">
-          Overviewでグラフと診断結果を常時確認。新規診断タブでクライアント追加と週次監視を開始。
+          概要でグラフと競合比較、プロンプトで回答詳細を確認。新規診断からクライアント追加と週次監視を開始。
         </p>
       </div>
     </section>
