@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 
 import type { GeoHistoryPoint, GeoPositionRanking } from "@/lib/geo/types";
+import { namesMatch } from "@/lib/geo/scoring";
 
 type Metric = "visibility" | "position";
 
@@ -38,12 +39,8 @@ function formatAxisDate(iso: string): string {
   return new Date(iso).toLocaleDateString("ja-JP", { month: "short", day: "numeric" });
 }
 
-function normalizeName(value: string): string {
-  return value.trim().toLowerCase().replace(/\s+/g, "");
-}
-
 function findRanking(rankings: GeoPositionRanking[], name: string): GeoPositionRanking | undefined {
-  return rankings.find((entry) => normalizeName(entry.name) === normalizeName(name));
+  return rankings.find((entry) => namesMatch(entry.name, name));
 }
 
 function getValueForBrand(
@@ -55,13 +52,13 @@ function getValueForBrand(
   const ranking = findRanking(run.positionRankings, brandName);
 
   if (metric === "visibility") {
-    if (normalizeName(brandName) === normalizeName(clientName)) {
+    if (namesMatch(brandName, clientName)) {
       return run.visibilityScore;
     }
     return ranking?.rate ?? null;
   }
 
-  if (normalizeName(brandName) === normalizeName(clientName)) {
+  if (namesMatch(brandName, clientName)) {
     return run.positionScore;
   }
   return ranking?.avgPosition ?? null;
@@ -81,7 +78,7 @@ function buildBrandList(
     }
   }
 
-  const others = [...names].filter((name) => normalizeName(name) !== normalizeName(brandName));
+  const others = [...names].filter((name) => !namesMatch(name, brandName));
 
   if (latest) {
     others.sort((a, b) => {
@@ -107,7 +104,7 @@ function buildSeries(
 
   return brands.map((name, index) => ({
     name,
-    isClient: normalizeName(name) === normalizeName(brandName),
+    isClient: namesMatch(name, brandName),
     color: SERIES_COLORS[index % SERIES_COLORS.length],
     values: sorted.map((run) => getValueForBrand(run, name, brandName, metric)),
   }));
@@ -123,7 +120,7 @@ function getLatestSnapshot(
 
   return buildBrandList(brandName, trackedCompetitors, runs).map((name) => {
     const ranking = findRanking(latest.positionRankings, name);
-    const isClient = normalizeName(name) === normalizeName(brandName);
+    const isClient = namesMatch(name, brandName);
 
     return {
       name,
@@ -381,7 +378,7 @@ export function GeoMetricsChart({
                     style={{
                       backgroundColor:
                         SERIES_COLORS[
-                          series.findIndex((item) => normalizeName(item.name) === normalizeName(row.name))
+                          series.findIndex((item) => namesMatch(item.name, row.name))
                         ] ?? SERIES_COLORS[0],
                     }}
                   />

@@ -4,11 +4,31 @@ function normalizeName(value: string): string {
   return value.trim().toLowerCase().replace(/\s+/g, "");
 }
 
+export function namesMatch(a: string, b: string): boolean {
+  const left = normalizeName(a);
+  const right = normalizeName(b);
+  if (!left || !right) return false;
+  return left === right || left.includes(right) || right.includes(left);
+}
+
+function findBrandIndex(text: string, brandName: string): number {
+  const lower = text.toLowerCase();
+  const trimmed = brandName.trim();
+  const candidates = [trimmed, trimmed.split(/\s+/)[0] ?? ""].filter(Boolean);
+
+  let best = -1;
+  for (const candidate of candidates) {
+    const index = lower.indexOf(candidate.toLowerCase());
+    if (index !== -1 && (best === -1 || index < best)) {
+      best = index;
+    }
+  }
+
+  return best;
+}
+
 export function detectMention(text: string, brandName: string): boolean {
-  const normalizedText = normalizeName(text);
-  const normalizedBrand = normalizeName(brandName);
-  if (!normalizedBrand) return false;
-  return normalizedText.includes(normalizedBrand);
+  return findBrandIndex(text, brandName) !== -1;
 }
 
 export function detectCompetitorMentions(text: string, competitors: string[]): string[] {
@@ -52,7 +72,7 @@ export function buildRankings(
     const trimmed = name.trim();
     if (!trimmed) continue;
 
-    const index = text.toLowerCase().indexOf(trimmed.toLowerCase());
+    const index = findBrandIndex(text, trimmed);
     if (index !== -1) {
       found.push({ name: trimmed, index });
     }
@@ -81,7 +101,7 @@ export function averagePosition(
 ): number | null {
   const positions = promptResults
     .flatMap((result) => result.rankings)
-    .filter((entry) => normalizeName(entry.name) === normalizeName(brandName))
+    .filter((entry) => namesMatch(entry.name, brandName))
     .map((entry) => entry.position);
 
   if (positions.length === 0) return null;
@@ -116,7 +136,7 @@ export function positionInRankings(
   rankings: Array<{ name: string; position: number }>,
   brandName: string,
 ): number | null {
-  const entry = rankings.find((item) => normalizeName(item.name) === normalizeName(brandName));
+  const entry = rankings.find((item) => namesMatch(item.name, brandName));
   return entry?.position ?? null;
 }
 
@@ -131,7 +151,7 @@ export function buildPositionRankings(
   return names
     .map((name) => {
       const mentionCount = promptResults.filter((result) =>
-        result.rankings.some((entry) => normalizeName(entry.name) === normalizeName(name)),
+        result.rankings.some((entry) => namesMatch(entry.name, name)),
       ).length;
 
       return {

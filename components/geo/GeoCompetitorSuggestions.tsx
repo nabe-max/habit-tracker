@@ -64,7 +64,11 @@ export function GeoCompetitorSuggestions({
 
       setState(data);
       onCompetitorsUpdated?.();
-      toast.success(action === "track" ? `${name} を競合に追加しました` : `${name} を除外しました`);
+      toast.success(
+        action === "track"
+          ? `${name} を競合に追加しました。グラフ反映には再スキャンが必要です`
+          : `${name} を除外しました`,
+      );
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "更新に失敗しました");
     } finally {
@@ -102,6 +106,12 @@ export function GeoCompetitorSuggestions({
           {tracked.length}/{MAX_COMPETITORS}
         </span>
       </div>
+
+      {tracked.length > 0 ? (
+        <p className="mb-5 text-xs text-slate-500">
+          Track した競合は、<strong>次回スキャン以降</strong>のグラフに反映されます。今すぐ反映するには cron-job.org で TEST RUN してください。
+        </p>
+      ) : null}
 
       {tracked.length > 0 ? (
         <div className="mb-5">
