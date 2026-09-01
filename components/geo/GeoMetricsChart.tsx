@@ -413,7 +413,7 @@ export function GeoMetricsChart({
 
       {sortedRuns.length === 1 ? (
         <p className="mt-3 text-center text-xs text-slate-500">
-          競合を Track して週次スキャンが溜まると、Peec AI のような比較グラフになります
+          競合を Track して毎日スキャンが溜まると、Peec AI のような比較グラフになります
         </p>
       ) : null}
     </div>

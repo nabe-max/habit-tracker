@@ -6,6 +6,9 @@ import { getGeoConfig, isGeoDbConfigured } from "@/lib/geo/env";
 import { listBrandsDueForScan, saveGeoScanRun, upsertCompetitorSuggestionsFromScan } from "@/lib/geo/db";
 import { formatOpenAIError } from "@/lib/openai";
 
+/** 日次バッチ。cron-job.org 側も毎日1回実行に設定してください。 */
+export const maxDuration = 300;
+
 export async function GET(req: NextRequest) {
   if (!isGeoDbConfigured()) {
     return NextResponse.json({ error: "GEO DB not configured" }, { status: 503 });
@@ -33,7 +36,8 @@ export async function GET(req: NextRequest) {
             clientCategory: brand.client_category,
             location: brand.location ?? undefined,
             website: brand.website ?? undefined,
-            competitors: brand.competitors,
+            competitors: brand.competitors ?? [],
+            customPrompts: brand.custom_prompts ?? [],
           },
           { includeRecommendations: false },
         );

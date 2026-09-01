@@ -46,7 +46,7 @@ export function GeoPromptsPanel({ client, onGoToScan, onDeleteProject, deleting 
                 <h2 className="text-2xl font-bold text-slate-900">{client!.brandName}</h2>
                 <p className="text-sm text-slate-500">
                   監視 {totalConfigured}件（標準 {history.defaultPrompts.length} + カスタム{" "}
-                  {history.customPrompts.length}）· 週次チェック
+                  {history.customPrompts.length}）· 毎日チェック
                 </p>
               </div>
               <div className="flex flex-col items-end gap-2">

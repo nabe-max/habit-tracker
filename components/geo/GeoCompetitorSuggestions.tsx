@@ -186,7 +186,7 @@ export function GeoCompetitorSuggestions({
         </div>
       ) : (
         <p className="text-sm text-slate-500">
-          候補はまだありません。週次スキャンが進むと、自社と一緒に言及されたブランドがここに表示されます。
+          候補はまだありません。毎日スキャンが進むと、自社と一緒に言及されたブランドがここに表示されます。
         </p>
       )}
     </section>

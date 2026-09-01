@@ -52,7 +52,7 @@ export function GeoPromptsTable({ result, customPrompts = [] }: GeoPromptsTableP
           <h3 className="font-semibold text-slate-900">監視プロンプト</h3>
         </div>
         <p className="mt-1 text-sm text-slate-500">
-          {result.mentionCount}/{result.totalPrompts} 件で言及あり · 週次スキャンで更新
+          {result.mentionCount}/{result.totalPrompts} 件で言及あり · 毎日スキャンで更新
         </p>
       </div>
 

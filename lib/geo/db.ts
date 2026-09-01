@@ -12,6 +12,7 @@ import {
   normalizePromptText,
 } from "@/lib/geo/prompts";
 import type { GeoCompetitorsResponse, GeoPromptsResponse, GeoScanResult, GeoSuggestedCompetitor } from "@/lib/geo/types";
+import { SCAN_INTERVAL_MS } from "@/lib/geo/scan-schedule";
 
 let client: SupabaseClient | null = null;
 
@@ -103,7 +104,7 @@ export async function verifyGeoBrandAccess(
 
 export async function listBrandsDueForScan(): Promise<GeoBrand[]> {
   const db = getGeoDb();
-  const dueBefore = Date.now() - 6 * 24 * 60 * 60 * 1000;
+  const dueBefore = Date.now() - SCAN_INTERVAL_MS;
 
   const { data, error } = await db
     .from("geo_brands")

@@ -99,7 +99,7 @@ export function GeoScanPanel({ onMonitorStarted }: GeoScanPanelProps) {
 
       saveMonitorClient(client);
       onMonitorStarted(client);
-      toast.success("週次監視を開始しました。Overviewタブで確認できます");
+      toast.success("毎日監視を開始しました。Overviewタブで確認できます");
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "監視の開始に失敗しました");
     } finally {
@@ -113,7 +113,7 @@ export function GeoScanPanel({ onMonitorStarted }: GeoScanPanelProps) {
         <p className="text-sm font-medium text-violet-600">Scan</p>
         <h2 className="text-2xl font-bold text-slate-900">新規クライアント診断</h2>
         <p className="mt-1 text-sm text-slate-500">
-          1回診断するか、週次監視を開始してOverviewダッシュボードに追加します。
+          1回診断するか、毎日監視を開始してOverviewダッシュボードに追加します。
         </p>
       </div>
 
@@ -178,7 +178,7 @@ export function GeoScanPanel({ onMonitorStarted }: GeoScanPanelProps) {
             className="border-violet-200 text-violet-700 hover:bg-violet-50"
           >
             {monitorLoading ? <Loader2 className="size-4 animate-spin" /> : <CalendarClock className="size-4" />}
-            {monitorLoading ? "開始中…" : "週次監視を開始 → Overviewへ"}
+            {monitorLoading ? "開始中…" : "毎日監視を開始 → Overviewへ"}
           </Button>
         </div>
       </form>

@@ -25,7 +25,7 @@ export function GeoClientShell({
         <LayoutDashboard className="size-10 text-slate-300" />
         <h2 className="mt-4 text-lg font-semibold text-slate-900">クライアントを選択してください</h2>
         <p className="mt-2 max-w-md text-sm text-slate-500">
-          左のサイドバーから監視中クライアントを選ぶか、「新規診断」で週次監視を開始してください。
+          左のサイドバーから監視中クライアントを選ぶか、「新規診断」で毎日監視を開始してください。
         </p>
         <button
           type="button"

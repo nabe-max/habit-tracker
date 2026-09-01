@@ -51,7 +51,7 @@ export function GeoDashboard({ client, onGoToScan, onDeleteProject, deleting }: 
                 <p className="text-sm font-medium text-violet-600">概要</p>
                 <h2 className="text-2xl font-bold text-slate-900">{client!.brandName}</h2>
                 <p className="text-sm text-slate-500">
-                  {client!.clientCategory} · 週次プロンプト監視
+                  {client!.clientCategory} · 毎日プロンプト監視
                 </p>
               </div>
               <div className="flex flex-col items-end gap-2">

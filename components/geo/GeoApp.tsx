@@ -210,7 +210,7 @@ export function GeoAppHero() {
           AI検索可視化ダッシュボード
         </h1>
         <p className="mt-2 max-w-2xl text-sm text-slate-600">
-          概要でグラフと競合比較、プロンプトで回答詳細を確認。新規診断からクライアント追加と週次監視を開始。
+          概要でグラフと競合比較、プロンプトで回答詳細を確認。新規診断からクライアント追加と毎日監視を開始。
         </p>
       </div>
     </section>

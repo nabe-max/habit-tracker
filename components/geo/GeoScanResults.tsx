@@ -27,7 +27,7 @@ export function GeoScanResults({ result, compact = false }: GeoScanResultsProps)
             <h3 className="font-semibold text-slate-900">Suggested Brands</h3>
           </div>
           <p className="mb-4 text-sm text-slate-600">
-            自社と2回以上一緒に言及されたブランドです。週次監視を開始すると Track / Reject できます。
+            自社と2回以上一緒に言及されたブランドです。毎日監視を開始すると Track / Reject できます。
           </p>
           <div className="space-y-2">
             {suggestedCompetitors.map((item) => (
