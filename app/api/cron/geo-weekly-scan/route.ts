@@ -1,9 +1,11 @@
-import { NextRequest, NextResponse } from "next/server";
+import { after, NextResponse } from "next/server";
+import type { NextRequest } from "next/server";
 
 import { isCronAuthorized } from "@/lib/cron-auth";
-import { runGeoScan } from "@/lib/geo/analyzer";
+import { listBrandsDueForScan } from "@/lib/geo/db";
 import { getGeoConfig, isGeoDbConfigured } from "@/lib/geo/env";
-import { listBrandsDueForScan, saveGeoScanRun, upsertCompetitorSuggestionsFromScan } from "@/lib/geo/db";
+import { rescanGeoBrand } from "@/lib/geo/rescan-brand";
+import { MAX_BRANDS_PER_CRON } from "@/lib/geo/scan-schedule";
 import { formatOpenAIError } from "@/lib/openai";
 
 /** 日次バッチ。cron-job.org 側も毎日1回実行に設定してください。 */
@@ -25,37 +27,42 @@ export async function GET(req: NextRequest) {
 
   try {
     const brands = await listBrandsDueForScan();
-    let scanned = 0;
-    let failed = 0;
+    const batch = brands.slice(0, MAX_BRANDS_PER_CRON);
+    const dryRun = req.nextUrl.searchParams.get("dry") === "1";
 
-    for (const brand of brands) {
-      try {
-        const result = await runGeoScan(
-          {
-            brandName: brand.brand_name,
-            clientCategory: brand.client_category,
-            location: brand.location ?? undefined,
-            website: brand.website ?? undefined,
-            competitors: brand.competitors ?? [],
-            customPrompts: brand.custom_prompts ?? [],
-          },
-          { includeRecommendations: false },
-        );
-
-        await saveGeoScanRun(brand.id, result);
-        await upsertCompetitorSuggestionsFromScan(
-          brand.id,
-          brand.competitors,
-          result.suggestedCompetitors,
-        );
-        scanned += 1;
-      } catch (error) {
-        failed += 1;
-        console.error(`[geo-weekly-scan] brand=${brand.id}`, error);
-      }
+    if (dryRun) {
+      return NextResponse.json({
+        ok: true,
+        dryRun: true,
+        checked: brands.length,
+        wouldQueue: batch.length,
+        brandNames: batch.map((brand) => brand.brand_name),
+      });
     }
 
-    return NextResponse.json({ ok: true, scanned, failed, checked: brands.length });
+    if (batch.length === 0) {
+      return NextResponse.json({ ok: true, queued: 0, checked: brands.length });
+    }
+
+    const brandIds = batch.map((brand) => brand.id);
+
+    after(async () => {
+      for (const brandId of brandIds) {
+        try {
+          await rescanGeoBrand(brandId);
+        } catch (error) {
+          console.error(`[geo-daily-scan] brand=${brandId}`, error);
+        }
+      }
+    });
+
+    return NextResponse.json({
+      ok: true,
+      queued: batch.length,
+      checked: brands.length,
+      brandNames: batch.map((brand) => brand.brand_name),
+      message: "Scans started in background",
+    });
   } catch (error) {
     console.error("[GET /api/cron/geo-weekly-scan]", error);
     return NextResponse.json({ error: formatOpenAIError(error) }, { status: 500 });
