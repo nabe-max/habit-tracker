@@ -15,6 +15,7 @@ interface GeoCustomPromptsProps {
   customPrompts: string[];
   canAddMore: boolean;
   maxCustomPrompts: number;
+  manualOnly?: boolean;
   onUpdated?: (options?: { rescanStarted?: boolean }) => void;
 }
 
@@ -24,11 +25,14 @@ export function GeoCustomPrompts({
   customPrompts,
   canAddMore,
   maxCustomPrompts,
+  manualOnly = false,
   onUpdated,
 }: GeoCustomPromptsProps) {
   const [prompt, setPrompt] = useState("");
   const [adding, setAdding] = useState(false);
   const [removingPrompt, setRemovingPrompt] = useState<string | null>(null);
+
+  const totalPrompts = manualOnly ? customPrompts.length : defaultPrompts.length + customPrompts.length;
 
   async function handleAdd(event: React.FormEvent) {
     event.preventDefault();
@@ -52,7 +56,7 @@ export function GeoCustomPrompts({
 
       setPrompt("");
       onUpdated?.({ rescanStarted: data.rescanStarted });
-      toast.success("カスタムプロンプトを追加しました。30〜60秒後に結果が更新されます");
+      toast.success("プロンプトを追加しました。30〜60秒後に結果が更新されます");
 
       if (data.rescanStarted) {
         window.setTimeout(() => onUpdated?.(), 45000);
@@ -82,7 +86,7 @@ export function GeoCustomPrompts({
       }
 
       onUpdated?.({ rescanStarted: data.rescanStarted });
-      toast.success("カスタムプロンプトを削除しました");
+      toast.success("プロンプトを削除しました");
 
       if (data.rescanStarted) {
         window.setTimeout(() => onUpdated?.(), 45000);
@@ -102,34 +106,40 @@ export function GeoCustomPrompts({
           <h3 className="font-semibold text-slate-900">プロンプト設定</h3>
         </div>
         <p className="mt-1 text-sm text-slate-500">
-          標準 {defaultPrompts.length}件 + カスタム {customPrompts.length}/{maxCustomPrompts}件
+          {manualOnly
+            ? `手動設定 ${customPrompts.length}/${maxCustomPrompts}件`
+            : `標準 ${defaultPrompts.length}件 + カスタム ${customPrompts.length}/${maxCustomPrompts}件（計 ${totalPrompts}件）`}
         </p>
       </div>
 
       <div className="space-y-6 px-6 py-5">
-        <div>
-          <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-400">
-            標準プロンプト（自動）
-          </p>
-          <ul className="space-y-2">
-            {defaultPrompts.map((item) => (
-              <li
-                key={item}
-                className="rounded-lg bg-slate-50 px-3 py-2 text-sm text-slate-700 ring-1 ring-slate-100"
-              >
-                {item}
-              </li>
-            ))}
-          </ul>
-        </div>
+        {!manualOnly ? (
+          <div>
+            <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-400">
+              標準プロンプト（自動）
+            </p>
+            <ul className="space-y-2">
+              {defaultPrompts.map((item) => (
+                <li
+                  key={item}
+                  className="rounded-lg bg-slate-50 px-3 py-2 text-sm text-slate-700 ring-1 ring-slate-100"
+                >
+                  {item}
+                </li>
+              ))}
+            </ul>
+          </div>
+        ) : null}
 
         <div>
           <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-400">
-            カスタムプロンプト
+            {manualOnly ? "監視プロンプト" : "カスタムプロンプト"}
           </p>
           {customPrompts.length === 0 ? (
             <p className="rounded-lg bg-slate-50 px-3 py-3 text-sm text-slate-500">
-              まだ追加されていません。下のフォームから監視したい質問を追加できます。
+              {manualOnly
+                ? "まだプロンプトがありません。下のフォームから追加してください。"
+                : "まだ追加されていません。下のフォームから監視したい質問を追加できます。"}
             </p>
           ) : (
             <ul className="space-y-2">
@@ -143,7 +153,7 @@ export function GeoCustomPrompts({
                     type="button"
                     onClick={() => void handleRemove(item)}
                     disabled={removingPrompt === item}
-                    aria-label="カスタムプロンプトを削除"
+                    aria-label="プロンプトを削除"
                     className="shrink-0 rounded-md p-1 text-slate-400 hover:bg-white hover:text-rose-600 disabled:opacity-50"
                   >
                     {removingPrompt === item ? (
@@ -160,7 +170,9 @@ export function GeoCustomPrompts({
 
         <form onSubmit={(event) => void handleAdd(event)} className="rounded-xl border border-dashed border-violet-200 bg-violet-50/40 p-4">
           <label className="block space-y-2">
-            <span className="text-sm font-medium text-slate-700">独自プロンプトを追加</span>
+            <span className="text-sm font-medium text-slate-700">
+              {manualOnly ? "監視プロンプトを追加" : "独自プロンプトを追加"}
+            </span>
             <Input
               value={prompt}
               onChange={(event) => setPrompt(event.target.value)}
@@ -173,7 +185,7 @@ export function GeoCustomPrompts({
             <p className="text-xs text-slate-500">
               {canAddMore
                 ? "追加後、自動で再スキャンしてグラフへ反映します"
-                : `カスタムプロンプトは最大${maxCustomPrompts}件までです`}
+                : `プロンプトは最大${maxCustomPrompts}件までです`}
             </p>
             <Button
               type="submit"

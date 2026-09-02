@@ -1,13 +1,15 @@
 "use client";
 
 import { useState } from "react";
-import { CalendarClock, Loader2, Search, Sparkles } from "lucide-react";
+import { CalendarClock, Globe, Loader2, Search, Sparkles, Type } from "lucide-react";
 import { toast } from "sonner";
 
 import { GeoScanResults } from "@/components/geo/GeoScanResults";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import type { GeoMonitorClient, GeoScanResult } from "@/lib/geo/types";
+import type { GeoSetupMode } from "@/lib/geo/registration";
 import { saveMonitorClient } from "@/lib/geo/storage";
 
 interface GeoScanPanelProps {
@@ -15,14 +17,30 @@ interface GeoScanPanelProps {
 }
 
 export function GeoScanPanel({ onMonitorStarted }: GeoScanPanelProps) {
+  const [setupMode, setSetupMode] = useState<GeoSetupMode>("domain");
   const [brandName, setBrandName] = useState("");
   const [clientCategory, setClientCategory] = useState("");
   const [website, setWebsite] = useState("");
   const [location, setLocation] = useState("");
   const [competitorsText, setCompetitorsText] = useState("");
+  const [customPromptsText, setCustomPromptsText] = useState("");
   const [loading, setLoading] = useState(false);
   const [monitorLoading, setMonitorLoading] = useState(false);
   const [result, setResult] = useState<GeoScanResult | null>(null);
+
+  const isManual = setupMode === "manual";
+
+  function buildPayload() {
+    return {
+      setupMode,
+      brandName,
+      clientCategory,
+      website: isManual ? undefined : website,
+      location,
+      competitorsText,
+      customPromptsText: isManual ? customPromptsText : undefined,
+    };
+  }
 
   async function handleScan(event: React.FormEvent) {
     event.preventDefault();
@@ -33,13 +51,7 @@ export function GeoScanPanel({ onMonitorStarted }: GeoScanPanelProps) {
       const res = await fetch("/api/geo/scan", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          brandName,
-          clientCategory,
-          website,
-          location,
-          competitorsText,
-        }),
+        body: JSON.stringify(buildPayload()),
       });
 
       const data = (await res.json()) as { error?: string; result?: GeoScanResult };
@@ -57,24 +69,13 @@ export function GeoScanPanel({ onMonitorStarted }: GeoScanPanelProps) {
   }
 
   async function handleStartMonitor() {
-    if (!brandName.trim() || !clientCategory.trim()) {
-      toast.error("クライアント名と業種を入力してください");
-      return;
-    }
-
     setMonitorLoading(true);
 
     try {
       const res = await fetch("/api/geo/monitor", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          brandName,
-          clientCategory,
-          website,
-          location,
-          competitorsText,
-        }),
+        body: JSON.stringify(buildPayload()),
       });
 
       const data = (await res.json()) as {
@@ -128,6 +129,33 @@ export function GeoScanPanel({ onMonitorStarted }: GeoScanPanelProps) {
           </div>
         </div>
 
+        <div className="mb-6 flex gap-2 rounded-xl bg-slate-100 p-1">
+          <button
+            type="button"
+            onClick={() => setSetupMode("domain")}
+            className={`flex flex-1 items-center justify-center gap-2 rounded-lg px-4 py-2.5 text-sm font-medium transition-colors ${
+              setupMode === "domain"
+                ? "bg-white text-violet-700 shadow-sm"
+                : "text-slate-600 hover:text-slate-900"
+            }`}
+          >
+            <Globe className="size-4" />
+            公式サイトあり
+          </button>
+          <button
+            type="button"
+            onClick={() => setSetupMode("manual")}
+            className={`flex flex-1 items-center justify-center gap-2 rounded-lg px-4 py-2.5 text-sm font-medium transition-colors ${
+              setupMode === "manual"
+                ? "bg-white text-violet-700 shadow-sm"
+                : "text-slate-600 hover:text-slate-900"
+            }`}
+          >
+            <Type className="size-4" />
+            公式サイトなし
+          </button>
+        </div>
+
         <div className="grid gap-4 sm:grid-cols-2">
           <label className="space-y-2">
             <span className="text-sm font-medium text-slate-700">クライアント名 *</span>
@@ -147,14 +175,48 @@ export function GeoScanPanel({ onMonitorStarted }: GeoScanPanelProps) {
               required
             />
           </label>
-          <label className="space-y-2">
-            <span className="text-sm font-medium text-slate-700">Webサイト</span>
-            <Input value={website} onChange={(e) => setWebsite(e.target.value)} placeholder="https://..." />
-          </label>
-          <label className="space-y-2">
-            <span className="text-sm font-medium text-slate-700">エリア</span>
-            <Input value={location} onChange={(e) => setLocation(e.target.value)} placeholder="例：大阪、全国" />
-          </label>
+
+          {isManual ? (
+            <>
+              <label className="space-y-2">
+                <span className="text-sm font-medium text-slate-700">エリア *</span>
+                <Input
+                  value={location}
+                  onChange={(e) => setLocation(e.target.value)}
+                  placeholder="例：大阪、全国"
+                  required
+                />
+              </label>
+              <label className="space-y-2 sm:col-span-2">
+                <span className="text-sm font-medium text-slate-700">監視プロンプト *</span>
+                <Textarea
+                  value={customPromptsText}
+                  onChange={(e) => setCustomPromptsText(e.target.value)}
+                  placeholder={"1行に1件ずつ入力\n例：大阪でおすすめの税理士を教えて\n例：梅田周辺で評判のいい税理士は？"}
+                  rows={5}
+                  required
+                />
+                <p className="text-xs text-slate-500">公式サイトがない場合は、監視したい質問を手入力してください（最大10件）</p>
+              </label>
+            </>
+          ) : (
+            <>
+              <label className="space-y-2">
+                <span className="text-sm font-medium text-slate-700">Webサイト *</span>
+                <Input
+                  value={website}
+                  onChange={(e) => setWebsite(e.target.value)}
+                  placeholder="https://..."
+                  required
+                />
+              </label>
+              <label className="space-y-2">
+                <span className="text-sm font-medium text-slate-700">エリア</span>
+                <Input value={location} onChange={(e) => setLocation(e.target.value)} placeholder="例：大阪、全国" />
+              </label>
+            </>
+          )}
+
           <label className="space-y-2 sm:col-span-2">
             <span className="text-sm font-medium text-slate-700">競合（任意）</span>
             <Input

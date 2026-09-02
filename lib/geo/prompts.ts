@@ -37,12 +37,17 @@ export function resolveGeoPrompts(params: {
   clientCategory: string;
   location?: string;
   customPrompts?: string[];
+  manualOnly?: boolean;
 }): string[] {
-  const defaults = buildDefaultGeoPrompts(params);
   const customs = (params.customPrompts ?? [])
     .map((prompt) => normalizePromptText(prompt))
     .filter(Boolean);
 
+  if (params.manualOnly) {
+    return customs;
+  }
+
+  const defaults = buildDefaultGeoPrompts(params);
   const seen = new Set<string>();
   const merged: string[] = [];
 
@@ -62,4 +67,27 @@ export function isDuplicatePrompt(
 ): boolean {
   const key = promptKey(prompt);
   return existing.some((item) => promptKey(item) === key);
+}
+
+export function parsePromptLines(text: string): string[] {
+  const seen = new Set<string>();
+  const prompts: string[] = [];
+
+  for (const line of text.split(/\n/)) {
+    const normalized = normalizePromptText(line);
+    if (!normalized) continue;
+    const key = promptKey(normalized);
+    if (seen.has(key)) continue;
+    seen.add(key);
+    prompts.push(normalized);
+  }
+
+  return prompts;
+}
+
+export function isManualPromptBrand(brand: {
+  website: string | null;
+  custom_prompts?: string[];
+}): boolean {
+  return !brand.website?.trim() && (brand.custom_prompts?.length ?? 0) > 0;
 }

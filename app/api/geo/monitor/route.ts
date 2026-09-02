@@ -11,6 +11,10 @@ import {
 import { isGeoDbConfigured } from "@/lib/geo/env";
 import { formatGeoServiceError } from "@/lib/geo/errors";
 import type { GeoScanRequest } from "@/lib/geo/types";
+import {
+  parseGeoRegistration,
+  validateGeoRegistration,
+} from "@/lib/geo/registration";
 
 export const maxDuration = 60;
 
@@ -29,43 +33,35 @@ export async function POST(req: Request) {
   try {
     const body = (await req.json()) as Partial<GeoScanRequest> & {
       competitorsText?: string;
+      setupMode?: "domain" | "manual";
+      customPromptsText?: string;
     };
 
-    const brandName = body.brandName?.trim();
-    const clientCategory = body.clientCategory?.trim();
-    const location = body.location?.trim();
-    const website = body.website?.trim();
-    const competitors = body.competitors?.length
-      ? body.competitors
-      : (body.competitorsText ?? "")
-          .split(/[,、\n]/)
-          .map((value) => value.trim())
-          .filter(Boolean);
-
-    if (!brandName) {
-      return NextResponse.json({ error: "クライアント名を入力してください" }, { status: 400 });
-    }
-
-    if (!clientCategory) {
-      return NextResponse.json({ error: "クライアント業種を入力してください" }, { status: 400 });
+    const registration = parseGeoRegistration(body);
+    const validationError = validateGeoRegistration(registration);
+    if (validationError) {
+      return NextResponse.json({ error: validationError }, { status: 400 });
     }
 
     const viewToken = randomBytes(24).toString("hex");
     const brand = await createGeoBrand({
       viewToken,
-      brandName,
-      clientCategory,
-      location,
-      website,
-      competitors: competitors.slice(0, 5),
+      brandName: registration.brandName,
+      clientCategory: registration.clientCategory,
+      location: registration.location,
+      website: registration.website,
+      competitors: registration.competitors,
+      customPrompts: registration.manualOnly ? registration.customPrompts : [],
     });
 
     const result = await runGeoScan({
-      brandName,
-      clientCategory,
-      location,
-      website,
-      competitors: competitors.slice(0, 5),
+      brandName: registration.brandName,
+      clientCategory: registration.clientCategory,
+      location: registration.location,
+      website: registration.website,
+      competitors: registration.competitors,
+      customPrompts: registration.customPrompts,
+      manualOnly: registration.manualOnly,
     });
 
     await saveGeoScanRun(brand.id, result);
@@ -74,8 +70,8 @@ export async function POST(req: Request) {
     return NextResponse.json({
       brandId: brand.id,
       viewToken,
-      brandName,
-      clientCategory,
+      brandName: registration.brandName,
+      clientCategory: registration.clientCategory,
       result,
     });
   } catch (error) {

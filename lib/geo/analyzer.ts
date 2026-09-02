@@ -100,8 +100,9 @@ export async function runGeoScan(
     brandName: request.brandName,
     clientCategory,
     location: request.location,
-    customPrompts: request.customPrompts,
-  });
+  customPrompts: request.customPrompts,
+  manualOnly: request.manualOnly,
+});
 
   const promptResults: GeoScanResult["promptResults"] = [];
   const answers: Array<{ id: string; answer: string }> = [];

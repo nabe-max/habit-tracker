@@ -6,6 +6,7 @@ import { getGeoConfig, isGeoDbConfigured } from "@/lib/geo/env";
 import {
   buildDefaultGeoPrompts,
   isDuplicatePrompt,
+  isManualPromptBrand,
   MAX_CUSTOM_PROMPTS,
   MAX_PROMPT_LENGTH,
   MIN_PROMPT_LENGTH,
@@ -67,6 +68,7 @@ export async function createGeoBrand(input: {
   location?: string;
   website?: string;
   competitors: string[];
+  customPrompts?: string[];
 }): Promise<GeoBrand> {
   const db = getGeoDb();
   const { data, error } = await db
@@ -78,6 +80,7 @@ export async function createGeoBrand(input: {
       location: input.location ?? null,
       website: input.website ?? null,
       competitors: input.competitors,
+      custom_prompts: input.customPrompts ?? [],
     })
     .select("*")
     .single();
@@ -352,15 +355,19 @@ export async function trackCompetitorSuggestion(
 
 function buildPromptsResponse(brand: GeoBrand): GeoPromptsResponse {
   const customPrompts = brand.custom_prompts ?? [];
+  const manualOnly = isManualPromptBrand(brand);
   return {
-    defaultPrompts: buildDefaultGeoPrompts({
-      brandName: brand.brand_name,
-      clientCategory: brand.client_category,
-      location: brand.location ?? undefined,
-    }),
+    defaultPrompts: manualOnly
+      ? []
+      : buildDefaultGeoPrompts({
+          brandName: brand.brand_name,
+          clientCategory: brand.client_category,
+          location: brand.location ?? undefined,
+        }),
     customPrompts,
-    canAddMore: customPrompts.length < MAX_CUSTOM_PROMPTS,
+    canAddMore: manualOnly ? customPrompts.length < MAX_CUSTOM_PROMPTS : customPrompts.length < MAX_CUSTOM_PROMPTS,
     maxCustomPrompts: MAX_CUSTOM_PROMPTS,
+    manualOnly,
   };
 }
 
@@ -393,11 +400,13 @@ export async function addCustomPrompt(
     throw new Error(`カスタムプロンプトは最大${MAX_CUSTOM_PROMPTS}件までです`);
   }
 
-  const defaults = buildDefaultGeoPrompts({
-    brandName: brand.brand_name,
-    clientCategory: brand.client_category,
-    location: brand.location ?? undefined,
-  });
+  const defaults = isManualPromptBrand(brand)
+    ? []
+    : buildDefaultGeoPrompts({
+        brandName: brand.brand_name,
+        clientCategory: brand.client_category,
+        location: brand.location ?? undefined,
+      });
 
   if (isDuplicatePrompt(normalized, [...defaults, ...customPrompts])) {
     throw new Error("同じプロンプトが既に登録されています");

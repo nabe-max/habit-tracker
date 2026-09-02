@@ -5,6 +5,7 @@ export interface GeoScanRequest {
   location?: string;
   competitors?: string[];
   customPrompts?: string[];
+  manualOnly?: boolean;
 }
 
 export interface GeoRankingEntry {
@@ -54,6 +55,7 @@ export interface GeoPromptsResponse {
   customPrompts: string[];
   canAddMore: boolean;
   maxCustomPrompts: number;
+  manualOnly?: boolean;
   rescanStarted?: boolean;
 }
 
@@ -96,6 +98,7 @@ export interface GeoHistoryResponse {
   customPrompts: string[];
   canAddMoreCustomPrompts: boolean;
   maxCustomPrompts: number;
+  manualOnly: boolean;
   runs: GeoHistoryPoint[];
   weekOverWeekDelta: number | null;
   positionWeekOverWeekDelta: number | null;

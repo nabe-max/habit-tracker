@@ -7,6 +7,7 @@ import {
   verifyGeoBrandAccess,
 } from "@/lib/geo/db";
 import { isGeoDbConfigured } from "@/lib/geo/env";
+import { isManualPromptBrand } from "@/lib/geo/prompts";
 import type { GeoHistoryResponse, GeoRankingEntry, GeoScanResult } from "@/lib/geo/types";
 
 export async function GET(
@@ -93,6 +94,7 @@ export async function GET(
       customPrompts: promptsState.customPrompts,
       canAddMoreCustomPrompts: promptsState.canAddMore,
       maxCustomPrompts: promptsState.maxCustomPrompts,
+      manualOnly: promptsState.manualOnly ?? isManualPromptBrand(brand),
       runs: runs.map((run) => ({
         id: run.id,
         visibilityScore: run.visibility_score,
