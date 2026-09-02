@@ -417,6 +417,18 @@ function isSamePrompt(a: string, b: string): boolean {
   return promptKey(a) === promptKey(b);
 }
 
+function isPromptSuggestionsTableMissing(error: unknown): boolean {
+  if (!error || typeof error !== "object") return false;
+  const code = "code" in error ? String(error.code) : "";
+  const message = "message" in error && typeof error.message === "string" ? error.message : "";
+  return (
+    code === "42P01" ||
+    code === "PGRST205" ||
+    message.includes("geo_prompt_suggestions") ||
+    message.includes("Could not find the table")
+  );
+}
+
 async function listPendingPromptSuggestions(brandId: string): Promise<GeoPromptSuggestionRow[]> {
   const db = getGeoDb();
   const { data, error } = await db
@@ -426,7 +438,10 @@ async function listPendingPromptSuggestions(brandId: string): Promise<GeoPromptS
     .eq("status", "pending")
     .order("created_at", { ascending: false });
 
-  if (error) throw error;
+  if (error) {
+    if (isPromptSuggestionsTableMissing(error)) return [];
+    throw error;
+  }
 
   return ((data ?? []) as Array<{ id: string; suggested_prompt: string; status: GeoPromptSuggestionRow["status"] }>).map(
     (row) => ({
@@ -467,7 +482,14 @@ export async function generatePromptSuggestionsForBrand(brandId: string): Promis
     .select("*")
     .eq("brand_id", brandId);
 
-  if (existingError) throw existingError;
+  if (existingError) {
+    if (isPromptSuggestionsTableMissing(existingError)) {
+      throw new Error(
+        "DBに geo_prompt_suggestions テーブルがありません。Supabase SQL Editor で geo-schema-prompt-suggestions.sql を実行してください。",
+      );
+    }
+    throw existingError;
+  }
 
   const existing = (existingRows ?? []) as Array<{ suggested_prompt: string; status: string }>;
 
@@ -483,7 +505,14 @@ export async function generatePromptSuggestionsForBrand(brandId: string): Promis
       status: "pending",
     });
 
-    if (insertError && insertError.code !== "23505") throw insertError;
+    if (insertError && insertError.code !== "23505") {
+      if (isPromptSuggestionsTableMissing(insertError)) {
+        throw new Error(
+          "DBに geo_prompt_suggestions テーブルがありません。Supabase SQL Editor で geo-schema-prompt-suggestions.sql を実行してください。",
+        );
+      }
+      throw insertError;
+    }
   }
 
   return buildPromptsResponse(brand);
@@ -527,23 +556,25 @@ export async function trackPromptSuggestion(
 
   if (error) throw error;
 
-  const { data: suggestionRows } = await db
+  const { data: suggestionRows, error: suggestionError } = await db
     .from("geo_prompt_suggestions")
     .select("*")
     .eq("brand_id", brandId);
 
-  const matched = ((suggestionRows ?? []) as Array<{ id: string; suggested_prompt: string }>).find((row) =>
-    isSamePrompt(row.suggested_prompt, normalized),
-  );
+  if (!suggestionError) {
+    const matched = ((suggestionRows ?? []) as Array<{ id: string; suggested_prompt: string }>).find((row) =>
+      isSamePrompt(row.suggested_prompt, normalized),
+    );
 
-  if (matched) {
-    await db.from("geo_prompt_suggestions").update({ status: "tracked" }).eq("id", matched.id);
-  } else {
-    await db.from("geo_prompt_suggestions").insert({
-      brand_id: brandId,
-      suggested_prompt: normalized,
-      status: "tracked",
-    });
+    if (matched) {
+      await db.from("geo_prompt_suggestions").update({ status: "tracked" }).eq("id", matched.id);
+    } else {
+      await db.from("geo_prompt_suggestions").insert({
+        brand_id: brandId,
+        suggested_prompt: normalized,
+        status: "tracked",
+      });
+    }
   }
 
   return buildPromptsResponse(normalizeGeoBrand(data as Record<string, unknown>));
@@ -561,23 +592,25 @@ export async function rejectPromptSuggestion(
   if (!normalized) return null;
 
   const db = getGeoDb();
-  const { data: suggestionRows } = await db
+  const { data: suggestionRows, error: suggestionError } = await db
     .from("geo_prompt_suggestions")
     .select("*")
     .eq("brand_id", brandId);
 
-  const matched = ((suggestionRows ?? []) as Array<{ id: string; suggested_prompt: string }>).find((row) =>
-    isSamePrompt(row.suggested_prompt, normalized),
-  );
+  if (!suggestionError) {
+    const matched = ((suggestionRows ?? []) as Array<{ id: string; suggested_prompt: string }>).find((row) =>
+      isSamePrompt(row.suggested_prompt, normalized),
+    );
 
-  if (matched) {
-    await db.from("geo_prompt_suggestions").update({ status: "rejected" }).eq("id", matched.id);
-  } else {
-    await db.from("geo_prompt_suggestions").insert({
-      brand_id: brandId,
-      suggested_prompt: normalized,
-      status: "rejected",
-    });
+    if (matched) {
+      await db.from("geo_prompt_suggestions").update({ status: "rejected" }).eq("id", matched.id);
+    } else {
+      await db.from("geo_prompt_suggestions").insert({
+        brand_id: brandId,
+        suggested_prompt: normalized,
+        status: "rejected",
+      });
+    }
   }
 
   return getPromptsState(brandId);

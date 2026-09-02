@@ -9,6 +9,9 @@ export function formatGeoServiceError(error: unknown): string {
       if (message.includes("custom_prompts")) {
         return "DBに custom_prompts 列がありません。Supabase SQL Editor で geo-schema-custom-prompts.sql を実行してください。";
       }
+      if (message.includes("geo_prompt_suggestions")) {
+        return "DBに geo_prompt_suggestions テーブルがありません。Supabase SQL Editor で geo-schema-prompt-suggestions.sql を実行してください。";
+      }
       return message;
     }
   }
