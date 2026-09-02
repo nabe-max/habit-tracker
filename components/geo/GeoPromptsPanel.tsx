@@ -35,9 +35,6 @@ export function GeoPromptsPanel({ client, onGoToScan, onDeleteProject, deleting 
         }
 
         const result = history.latestResult;
-        const totalConfigured = history.manualOnly
-          ? history.customPrompts.length
-          : history.defaultPrompts.length + history.customPrompts.length;
 
         return (
           <div className="space-y-6">
@@ -46,9 +43,7 @@ export function GeoPromptsPanel({ client, onGoToScan, onDeleteProject, deleting 
                 <p className="text-sm font-medium text-violet-600">プロンプト</p>
                 <h2 className="text-2xl font-bold text-slate-900">{client!.brandName}</h2>
                 <p className="text-sm text-slate-500">
-                  {history.manualOnly
-                    ? `監視 ${totalConfigured}件（手動設定）· 毎日チェック`
-                    : `監視 ${totalConfigured}件（標準 ${history.defaultPrompts.length} + カスタム ${history.customPrompts.length}）· 毎日チェック`}
+                  監視 {history.activePrompts.length}件 · 毎日チェック
                 </p>
               </div>
               <div className="flex flex-col items-end gap-2">
@@ -72,17 +67,16 @@ export function GeoPromptsPanel({ client, onGoToScan, onDeleteProject, deleting 
 
             <GeoCustomPrompts
               client={client!}
-              defaultPrompts={history.defaultPrompts}
-              customPrompts={history.customPrompts}
-              canAddMore={history.canAddMoreCustomPrompts}
-              maxCustomPrompts={history.maxCustomPrompts}
-              manualOnly={history.manualOnly}
+              activePrompts={history.activePrompts}
+              suggested={history.suggestedPrompts}
+              canAddMore={history.canAddMorePrompts}
+              maxPrompts={history.maxPrompts}
               onUpdated={() => reload()}
             />
 
             {result ? (
               <>
-                <GeoPromptsTable result={result} customPrompts={history.customPrompts} />
+                <GeoPromptsTable result={result} />
 
                 {result.recommendations.length > 0 ? (
                   <section className="rounded-xl border border-slate-200 bg-white p-6">
@@ -105,7 +99,7 @@ export function GeoPromptsPanel({ client, onGoToScan, onDeleteProject, deleting 
                 ) : null}
               </>
             ) : (
-              <GeoNoScanData message="スキャン結果がありません。プロンプト追加後に自動再スキャンされます。" />
+              <GeoNoScanData message="プロンプトを Track または手動追加すると、自動で再スキャンされます。" />
             )}
           </div>
         );

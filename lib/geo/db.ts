@@ -13,17 +13,17 @@ import {
 import { isValidWebsite } from "@/lib/geo/registration";
 import { getGeoConfig, isGeoDbConfigured } from "@/lib/geo/env";
 import {
-  buildDefaultGeoPrompts,
   isDuplicatePrompt,
-  isManualPromptBrand,
   MAX_CUSTOM_PROMPTS,
   MAX_PROMPT_LENGTH,
   MIN_PROMPT_LENGTH,
   normalizePromptText,
 } from "@/lib/geo/prompts";
+import { generatePromptSuggestions } from "@/lib/geo/prompt-suggestions";
 import type {
   GeoCompetitorsResponse,
   GeoPromptsResponse,
+  GeoPromptSuggestionRow,
   GeoScanResult,
   GeoSuggestedCompetitor,
   GeoTrackedCompetitor,
@@ -409,22 +409,84 @@ export async function trackCompetitorSuggestion(
   return getCompetitorsState(brandId);
 }
 
-function buildPromptsResponse(brand: GeoBrand): GeoPromptsResponse {
-  const customPrompts = brand.custom_prompts ?? [];
-  const manualOnly = isManualPromptBrand(brand);
+function promptKey(prompt: string): string {
+  return normalizePromptText(prompt).toLowerCase();
+}
+
+function isSamePrompt(a: string, b: string): boolean {
+  return promptKey(a) === promptKey(b);
+}
+
+async function listPendingPromptSuggestions(brandId: string): Promise<GeoPromptSuggestionRow[]> {
+  const db = getGeoDb();
+  const { data, error } = await db
+    .from("geo_prompt_suggestions")
+    .select("*")
+    .eq("brand_id", brandId)
+    .eq("status", "pending")
+    .order("created_at", { ascending: false });
+
+  if (error) throw error;
+
+  return ((data ?? []) as Array<{ id: string; suggested_prompt: string; status: GeoPromptSuggestionRow["status"] }>).map(
+    (row) => ({
+      id: row.id,
+      prompt: row.suggested_prompt,
+      status: row.status,
+    }),
+  );
+}
+
+async function buildPromptsResponse(brand: GeoBrand): Promise<GeoPromptsResponse> {
+  const activePrompts = brand.custom_prompts ?? [];
+  const suggested = await listPendingPromptSuggestions(brand.id);
+
   return {
-    defaultPrompts: manualOnly
-      ? []
-      : buildDefaultGeoPrompts({
-          brandName: brand.brand_name,
-          clientCategory: brand.client_category,
-          location: brand.location ?? undefined,
-        }),
-    customPrompts,
-    canAddMore: manualOnly ? customPrompts.length < MAX_CUSTOM_PROMPTS : customPrompts.length < MAX_CUSTOM_PROMPTS,
-    maxCustomPrompts: MAX_CUSTOM_PROMPTS,
-    manualOnly,
+    activePrompts,
+    suggested,
+    canAddMore: activePrompts.length < MAX_CUSTOM_PROMPTS,
+    maxPrompts: MAX_CUSTOM_PROMPTS,
   };
+}
+
+export async function generatePromptSuggestionsForBrand(brandId: string): Promise<GeoPromptsResponse> {
+  const brand = await getGeoBrandById(brandId);
+  if (!brand) throw new Error("Brand not found");
+
+  const generated = await generatePromptSuggestions({
+    brandName: brand.brand_name,
+    clientCategory: brand.client_category,
+    location: brand.location ?? undefined,
+    website: brand.website ?? undefined,
+  });
+
+  const db = getGeoDb();
+  const activePrompts = brand.custom_prompts ?? [];
+  const { data: existingRows, error: existingError } = await db
+    .from("geo_prompt_suggestions")
+    .select("*")
+    .eq("brand_id", brandId);
+
+  if (existingError) throw existingError;
+
+  const existing = (existingRows ?? []) as Array<{ suggested_prompt: string; status: string }>;
+
+  for (const prompt of generated) {
+    if (activePrompts.some((item) => isSamePrompt(item, prompt))) continue;
+    if (existing.some((row) => isSamePrompt(row.suggested_prompt, prompt) && row.status !== "rejected")) {
+      continue;
+    }
+
+    const { error: insertError } = await db.from("geo_prompt_suggestions").insert({
+      brand_id: brandId,
+      suggested_prompt: prompt,
+      status: "pending",
+    });
+
+    if (insertError && insertError.code !== "23505") throw insertError;
+  }
+
+  return buildPromptsResponse(brand);
 }
 
 export async function getPromptsState(brandId: string): Promise<GeoPromptsResponse> {
@@ -433,6 +495,92 @@ export async function getPromptsState(brandId: string): Promise<GeoPromptsRespon
     throw new Error("Brand not found");
   }
   return buildPromptsResponse(brand);
+}
+
+export async function trackPromptSuggestion(
+  brandId: string,
+  viewToken: string,
+  prompt: string,
+): Promise<GeoPromptsResponse | null> {
+  const brand = await verifyGeoBrandAccess(brandId, viewToken);
+  if (!brand) return null;
+
+  const normalized = normalizePromptText(prompt);
+  if (!normalized) return null;
+
+  const activePrompts = brand.custom_prompts ?? [];
+  if (activePrompts.length >= MAX_CUSTOM_PROMPTS) {
+    throw new Error(`プロンプトは最大${MAX_CUSTOM_PROMPTS}件までです`);
+  }
+  if (isDuplicatePrompt(normalized, activePrompts)) {
+    return getPromptsState(brandId);
+  }
+
+  const db = getGeoDb();
+  const nextPrompts = [...activePrompts, normalized];
+  const { data, error } = await db
+    .from("geo_brands")
+    .update({ custom_prompts: nextPrompts })
+    .eq("id", brandId)
+    .select("*")
+    .single();
+
+  if (error) throw error;
+
+  const { data: suggestionRows } = await db
+    .from("geo_prompt_suggestions")
+    .select("*")
+    .eq("brand_id", brandId);
+
+  const matched = ((suggestionRows ?? []) as Array<{ id: string; suggested_prompt: string }>).find((row) =>
+    isSamePrompt(row.suggested_prompt, normalized),
+  );
+
+  if (matched) {
+    await db.from("geo_prompt_suggestions").update({ status: "tracked" }).eq("id", matched.id);
+  } else {
+    await db.from("geo_prompt_suggestions").insert({
+      brand_id: brandId,
+      suggested_prompt: normalized,
+      status: "tracked",
+    });
+  }
+
+  return buildPromptsResponse(normalizeGeoBrand(data as Record<string, unknown>));
+}
+
+export async function rejectPromptSuggestion(
+  brandId: string,
+  viewToken: string,
+  prompt: string,
+): Promise<GeoPromptsResponse | null> {
+  const brand = await verifyGeoBrandAccess(brandId, viewToken);
+  if (!brand) return null;
+
+  const normalized = normalizePromptText(prompt);
+  if (!normalized) return null;
+
+  const db = getGeoDb();
+  const { data: suggestionRows } = await db
+    .from("geo_prompt_suggestions")
+    .select("*")
+    .eq("brand_id", brandId);
+
+  const matched = ((suggestionRows ?? []) as Array<{ id: string; suggested_prompt: string }>).find((row) =>
+    isSamePrompt(row.suggested_prompt, normalized),
+  );
+
+  if (matched) {
+    await db.from("geo_prompt_suggestions").update({ status: "rejected" }).eq("id", matched.id);
+  } else {
+    await db.from("geo_prompt_suggestions").insert({
+      brand_id: brandId,
+      suggested_prompt: normalized,
+      status: "rejected",
+    });
+  }
+
+  return getPromptsState(brandId);
 }
 
 export async function addCustomPrompt(
@@ -451,25 +599,17 @@ export async function addCustomPrompt(
     throw new Error(`プロンプトは${MAX_PROMPT_LENGTH}文字以内で入力してください`);
   }
 
-  const customPrompts = brand.custom_prompts ?? [];
-  if (customPrompts.length >= MAX_CUSTOM_PROMPTS) {
-    throw new Error(`カスタムプロンプトは最大${MAX_CUSTOM_PROMPTS}件までです`);
+  const activePrompts = brand.custom_prompts ?? [];
+  if (activePrompts.length >= MAX_CUSTOM_PROMPTS) {
+    throw new Error(`プロンプトは最大${MAX_CUSTOM_PROMPTS}件までです`);
   }
 
-  const defaults = isManualPromptBrand(brand)
-    ? []
-    : buildDefaultGeoPrompts({
-        brandName: brand.brand_name,
-        clientCategory: brand.client_category,
-        location: brand.location ?? undefined,
-      });
-
-  if (isDuplicatePrompt(normalized, [...defaults, ...customPrompts])) {
+  if (isDuplicatePrompt(normalized, activePrompts)) {
     throw new Error("同じプロンプトが既に登録されています");
   }
 
   const db = getGeoDb();
-  const nextPrompts = [...customPrompts, normalized];
+  const nextPrompts = [...activePrompts, normalized];
   const { data, error } = await db
     .from("geo_brands")
     .update({ custom_prompts: nextPrompts })
@@ -478,7 +618,7 @@ export async function addCustomPrompt(
     .single();
 
   if (error) throw error;
-  return buildPromptsResponse(data as GeoBrand);
+  return buildPromptsResponse(normalizeGeoBrand(data as Record<string, unknown>));
 }
 
 export async function removeCustomPrompt(
@@ -490,13 +630,11 @@ export async function removeCustomPrompt(
   if (!brand) return null;
 
   const normalized = normalizePromptText(prompt);
-  const customPrompts = brand.custom_prompts ?? [];
-  const nextPrompts = customPrompts.filter(
-    (item) => promptKey(item) !== promptKey(normalized),
-  );
+  const activePrompts = brand.custom_prompts ?? [];
+  const nextPrompts = activePrompts.filter((item) => !isSamePrompt(item, normalized));
 
-  if (nextPrompts.length === customPrompts.length) {
-    throw new Error("カスタムプロンプトが見つかりません");
+  if (nextPrompts.length === activePrompts.length) {
+    throw new Error("プロンプトが見つかりません");
   }
 
   const db = getGeoDb();
@@ -508,11 +646,7 @@ export async function removeCustomPrompt(
     .single();
 
   if (error) throw error;
-  return buildPromptsResponse(data as GeoBrand);
-}
-
-function promptKey(prompt: string): string {
-  return normalizePromptText(prompt).toLowerCase();
+  return buildPromptsResponse(normalizeGeoBrand(data as Record<string, unknown>));
 }
 
 export async function rejectCompetitorSuggestion(

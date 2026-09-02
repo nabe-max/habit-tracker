@@ -36,7 +36,7 @@ export function GeoScanPanel({ onMonitorStarted }: GeoScanPanelProps) {
       clientCategory,
       website: isManual ? undefined : website,
       location,
-      customPromptsText: isManual ? customPromptsText : undefined,
+      customPromptsText: customPromptsText.trim() ? customPromptsText : undefined,
     };
   }
 
@@ -211,6 +211,15 @@ export function GeoScanPanel({ onMonitorStarted }: GeoScanPanelProps) {
               <label className="space-y-2">
                 <span className="text-sm font-medium text-slate-700">エリア</span>
                 <Input value={location} onChange={(e) => setLocation(e.target.value)} placeholder="例：大阪、全国" />
+              </label>
+              <label className="space-y-2 sm:col-span-2">
+                <span className="text-sm font-medium text-slate-700">監視プロンプト（任意）</span>
+                <Textarea
+                  value={customPromptsText}
+                  onChange={(e) => setCustomPromptsText(e.target.value)}
+                  placeholder={"1行に1件ずつ入力。空欄ならAI提案で診断します"}
+                  rows={3}
+                />
               </label>
             </>
           )}

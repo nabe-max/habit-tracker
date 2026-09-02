@@ -5,12 +5,13 @@ import { NextResponse } from "next/server";
 import { runGeoScan } from "@/lib/geo/analyzer";
 import {
   createGeoBrand,
+  generatePromptSuggestionsForBrand,
   saveGeoScanRun,
   upsertCompetitorSuggestionsFromScan,
 } from "@/lib/geo/db";
 import { isGeoDbConfigured } from "@/lib/geo/env";
 import { formatGeoServiceError } from "@/lib/geo/errors";
-import type { GeoScanRequest } from "@/lib/geo/types";
+import type { GeoScanRequest, GeoScanResult } from "@/lib/geo/types";
 import {
   parseGeoRegistration,
   validateGeoRegistration,
@@ -49,20 +50,29 @@ export async function POST(req: Request) {
       clientCategory: registration.clientCategory,
       location: registration.location,
       website: registration.website,
-      customPrompts: registration.manualOnly ? registration.customPrompts : [],
-    });
-
-    const result = await runGeoScan({
-      brandName: registration.brandName,
-      clientCategory: registration.clientCategory,
-      location: registration.location,
-      website: registration.website,
       customPrompts: registration.customPrompts,
-      manualOnly: registration.manualOnly,
     });
 
-    await saveGeoScanRun(brand.id, result);
-    await upsertCompetitorSuggestionsFromScan(brand.id, brand.competitors, result.suggestedCompetitors);
+    try {
+      await generatePromptSuggestionsForBrand(brand.id);
+    } catch (error) {
+      console.error("[POST /api/geo/monitor] prompt suggestion generation failed", error);
+    }
+
+    let result: GeoScanResult | null = null;
+
+    if (registration.customPrompts.length > 0) {
+      result = await runGeoScan({
+        brandName: registration.brandName,
+        clientCategory: registration.clientCategory,
+        location: registration.location,
+        website: registration.website,
+        customPrompts: registration.customPrompts,
+      });
+
+      await saveGeoScanRun(brand.id, result);
+      await upsertCompetitorSuggestionsFromScan(brand.id, brand.competitors, result.suggestedCompetitors);
+    }
 
     return NextResponse.json({
       brandId: brand.id,

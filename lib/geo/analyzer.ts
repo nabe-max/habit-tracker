@@ -102,11 +102,7 @@ export async function runGeoScan(
   const competitorNames = getTrackedNames(trackedCompetitors);
   const clientCategory = request.clientCategory.trim();
   const prompts = resolveGeoPrompts({
-    brandName: request.brandName,
-    clientCategory,
-    location: request.location,
     customPrompts: request.customPrompts,
-    manualOnly: request.manualOnly,
   });
 
   const promptResults: GeoScanResult["promptResults"] = [];

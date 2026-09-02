@@ -5,6 +5,7 @@ import {
   parseGeoRegistration,
   validateGeoRegistration,
 } from "@/lib/geo/registration";
+import { generatePromptSuggestions } from "@/lib/geo/prompt-suggestions";
 import type { GeoScanRequest } from "@/lib/geo/types";
 import { formatOpenAIError } from "@/lib/openai";
 
@@ -25,13 +26,27 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: validationError }, { status: 400 });
     }
 
+    let prompts = registration.customPrompts;
+
+    if (prompts.length === 0 && !registration.manualOnly) {
+      prompts = await generatePromptSuggestions({
+        brandName: registration.brandName,
+        clientCategory: registration.clientCategory,
+        location: registration.location,
+        website: registration.website,
+      });
+    }
+
+    if (prompts.length === 0) {
+      return NextResponse.json({ error: "診断するプロンプトがありません" }, { status: 400 });
+    }
+
     const result = await runGeoScan({
       brandName: registration.brandName,
       clientCategory: registration.clientCategory,
       location: registration.location,
       website: registration.website,
-      customPrompts: registration.customPrompts,
-      manualOnly: registration.manualOnly,
+      customPrompts: prompts,
     });
 
     return NextResponse.json({ result });

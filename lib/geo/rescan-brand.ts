@@ -1,5 +1,4 @@
 import { runGeoScan } from "@/lib/geo/analyzer";
-import { isManualPromptBrand } from "@/lib/geo/prompts";
 import {
   getGeoBrandById,
   saveGeoScanRun,
@@ -10,7 +9,9 @@ export async function rescanGeoBrand(brandId: string): Promise<void> {
   const brand = await getGeoBrandById(brandId);
   if (!brand?.is_active) return;
 
-  const manualOnly = isManualPromptBrand(brand);
+  const activePrompts = brand.custom_prompts ?? [];
+  if (activePrompts.length === 0) return;
+
   const competitors = brand.competitors ?? [];
 
   const result = await runGeoScan(
@@ -19,8 +20,7 @@ export async function rescanGeoBrand(brandId: string): Promise<void> {
       clientCategory: brand.client_category,
       location: brand.location ?? undefined,
       website: brand.website ?? undefined,
-      customPrompts: brand.custom_prompts ?? [],
-      manualOnly,
+      customPrompts: activePrompts,
     },
     { includeRecommendations: false, competitors },
   );

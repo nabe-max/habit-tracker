@@ -4,7 +4,12 @@ export interface GeoScanRequest {
   website?: string;
   location?: string;
   customPrompts?: string[];
-  manualOnly?: boolean;
+}
+
+export interface GeoPromptSuggestionRow {
+  id: string;
+  prompt: string;
+  status: "pending" | "tracked" | "rejected";
 }
 
 export interface GeoTrackedCompetitor {
@@ -56,11 +61,10 @@ export interface GeoCompetitorsResponse {
 }
 
 export interface GeoPromptsResponse {
-  defaultPrompts: string[];
-  customPrompts: string[];
+  activePrompts: string[];
+  suggested: GeoPromptSuggestionRow[];
   canAddMore: boolean;
-  maxCustomPrompts: number;
-  manualOnly?: boolean;
+  maxPrompts: number;
   rescanStarted?: boolean;
 }
 
@@ -99,11 +103,10 @@ export interface GeoHistoryPoint {
 export interface GeoHistoryResponse {
   brand: GeoMonitorClient;
   trackedCompetitors: GeoTrackedCompetitor[];
-  defaultPrompts: string[];
-  customPrompts: string[];
-  canAddMoreCustomPrompts: boolean;
-  maxCustomPrompts: number;
-  manualOnly: boolean;
+  activePrompts: string[];
+  suggestedPrompts: GeoPromptSuggestionRow[];
+  canAddMorePrompts: boolean;
+  maxPrompts: number;
   runs: GeoHistoryPoint[];
   weekOverWeekDelta: number | null;
   positionWeekOverWeekDelta: number | null;
