@@ -1,6 +1,7 @@
 import { after, NextResponse } from "next/server";
 
 import {
+  addManualCompetitor,
   getCompetitorsState,
   rejectCompetitorSuggestion,
   trackCompetitorSuggestion,
@@ -53,32 +54,48 @@ export async function POST(
   try {
     const body = (await req.json()) as {
       token?: string;
-      action?: "track" | "reject";
+      action?: "track" | "reject" | "add";
       name?: string;
+      trackedName?: string;
+      displayName?: string;
+      domain?: string;
     };
 
     const token = body.token?.trim();
     const action = body.action;
-    const name = body.name?.trim();
 
     if (!token) {
       return NextResponse.json({ error: "アクセストークンが必要です" }, { status: 401 });
     }
 
-    if (!action || !name) {
-      return NextResponse.json({ error: "action と name が必要です" }, { status: 400 });
-    }
+    let state;
+    let shouldRescan = false;
 
-    const state =
-      action === "track"
-        ? await trackCompetitorSuggestion(brandId, token, name)
-        : await rejectCompetitorSuggestion(brandId, token, name);
+    if (action === "add") {
+      state = await addManualCompetitor(brandId, token, {
+        trackedName: body.trackedName ?? "",
+        displayName: body.displayName ?? "",
+        domain: body.domain,
+      });
+      shouldRescan = true;
+    } else {
+      const name = body.name?.trim();
+      if (!action || !name) {
+        return NextResponse.json({ error: "action と name が必要です" }, { status: 400 });
+      }
+
+      state =
+        action === "track"
+          ? await trackCompetitorSuggestion(brandId, token, name)
+          : await rejectCompetitorSuggestion(brandId, token, name);
+      shouldRescan = action === "track";
+    }
 
     if (!state) {
       return NextResponse.json({ error: "アクセスできません" }, { status: 403 });
     }
 
-    if (action === "track") {
+    if (shouldRescan) {
       after(async () => {
         try {
           await rescanGeoBrand(brandId);
@@ -88,9 +105,10 @@ export async function POST(
       });
     }
 
-    return NextResponse.json({ ...state, rescanStarted: action === "track" });
+    return NextResponse.json({ ...state, rescanStarted: shouldRescan });
   } catch (error) {
     console.error("[POST /api/geo/competitors]", error);
-    return NextResponse.json({ error: "競合の更新に失敗しました" }, { status: 500 });
+    const message = error instanceof Error ? error.message : "競合の更新に失敗しました";
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }

@@ -32,7 +32,6 @@ export async function POST(req: Request) {
 
   try {
     const body = (await req.json()) as Partial<GeoScanRequest> & {
-      competitorsText?: string;
       setupMode?: "domain" | "manual";
       customPromptsText?: string;
     };
@@ -50,7 +49,6 @@ export async function POST(req: Request) {
       clientCategory: registration.clientCategory,
       location: registration.location,
       website: registration.website,
-      competitors: registration.competitors,
       customPrompts: registration.manualOnly ? registration.customPrompts : [],
     });
 
@@ -59,7 +57,6 @@ export async function POST(req: Request) {
       clientCategory: registration.clientCategory,
       location: registration.location,
       website: registration.website,
-      competitors: registration.competitors,
       customPrompts: registration.customPrompts,
       manualOnly: registration.manualOnly,
     });

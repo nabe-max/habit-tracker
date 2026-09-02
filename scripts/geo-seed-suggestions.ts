@@ -11,13 +11,15 @@ async function main() {
   const brand = await getGeoBrandById(brandId);
   if (!brand) throw new Error(`Brand not found: ${brandId}`);
 
-  const result = await runGeoScan({
-    brandName: brand.brand_name,
-    clientCategory: brand.client_category,
-    location: brand.location ?? undefined,
-    website: brand.website ?? undefined,
-    competitors: brand.competitors ?? [],
-  });
+  const result = await runGeoScan(
+    {
+      brandName: brand.brand_name,
+      clientCategory: brand.client_category,
+      location: brand.location ?? undefined,
+      website: brand.website ?? undefined,
+    },
+    { competitors: brand.competitors ?? [] },
+  );
 
   console.log("visibility:", result.visibilityScore);
   console.log("mentioned:", result.mentionCount);

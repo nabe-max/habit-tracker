@@ -8,7 +8,7 @@ create table if not exists geo_brands (
   client_category text not null,
   location text,
   website text,
-  competitors text[] not null default '{}',
+  competitors jsonb not null default '[]',
   custom_prompts text[] not null default '{}',
   is_active boolean not null default true,
   last_scanned_at timestamptz,

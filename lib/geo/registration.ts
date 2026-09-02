@@ -29,7 +29,6 @@ export interface ParsedGeoRegistration {
   clientCategory: string;
   location?: string;
   website?: string;
-  competitors: string[];
   customPrompts: string[];
   manualOnly: boolean;
 }
@@ -40,8 +39,6 @@ export function parseGeoRegistration(body: {
   clientCategory?: string;
   location?: string;
   website?: string;
-  competitors?: string[];
-  competitorsText?: string;
   customPrompts?: string[];
   customPromptsText?: string;
 }): ParsedGeoRegistration {
@@ -50,12 +47,6 @@ export function parseGeoRegistration(body: {
   const clientCategory = body.clientCategory?.trim() ?? "";
   const location = body.location?.trim();
   const website = normalizeWebsite(body.website) ?? undefined;
-  const competitors = body.competitors?.length
-    ? body.competitors
-    : (body.competitorsText ?? "")
-        .split(/[,、\n]/)
-        .map((value) => value.trim())
-        .filter(Boolean);
 
   const customPrompts =
     body.customPrompts?.length
@@ -68,7 +59,6 @@ export function parseGeoRegistration(body: {
     clientCategory,
     location,
     website,
-    competitors: competitors.slice(0, 5),
     customPrompts: customPrompts.slice(0, MAX_CUSTOM_PROMPTS),
     manualOnly: setupMode === "manual",
   };

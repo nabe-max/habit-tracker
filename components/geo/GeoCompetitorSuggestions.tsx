@@ -1,10 +1,11 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { Loader2, Sparkles, Users, X } from "lucide-react";
+import { Loader2, Plus, Sparkles, Users, X } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { MAX_COMPETITORS } from "@/lib/geo/competitors";
 import type { GeoCompetitorsResponse, GeoMonitorClient } from "@/lib/geo/types";
 
@@ -20,6 +21,10 @@ export function GeoCompetitorSuggestions({
   const [state, setState] = useState<GeoCompetitorsResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [actionName, setActionName] = useState<string | null>(null);
+  const [adding, setAdding] = useState(false);
+  const [trackedName, setTrackedName] = useState("");
+  const [displayName, setDisplayName] = useState("");
+  const [domain, setDomain] = useState("");
 
   const loadState = useCallback(async () => {
     setLoading(true);
@@ -80,6 +85,45 @@ export function GeoCompetitorSuggestions({
     }
   }
 
+  async function handleManualAdd(event: React.FormEvent) {
+    event.preventDefault();
+    setAdding(true);
+
+    try {
+      const res = await fetch(`/api/geo/competitors/${client.brandId}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          token: client.viewToken,
+          action: "add",
+          trackedName,
+          displayName,
+          domain: domain.trim() || undefined,
+        }),
+      });
+
+      const data = (await res.json()) as GeoCompetitorsResponse & { error?: string };
+      if (!res.ok) {
+        throw new Error(data.error ?? "追加に失敗しました");
+      }
+
+      setState(data);
+      setTrackedName("");
+      setDisplayName("");
+      setDomain("");
+      onCompetitorsUpdated?.({ rescanStarted: data.rescanStarted });
+      toast.success("競合を追加しました。30〜60秒後にグラフへ反映されます");
+
+      if (data.rescanStarted) {
+        window.setTimeout(() => onCompetitorsUpdated?.(), 45000);
+      }
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "追加に失敗しました");
+    } finally {
+      setAdding(false);
+    }
+  }
+
   if (loading) {
     return (
       <section className="rounded-xl border border-slate-200 bg-white p-6">
@@ -113,7 +157,7 @@ export function GeoCompetitorSuggestions({
 
       {tracked.length > 0 ? (
         <p className="mb-5 text-xs text-slate-500">
-          Track すると<strong>自動で再スキャン</strong>され、競合がグラフに反映されます（30〜60秒）。
+          追加すると<strong>自動で再スキャン</strong>され、競合がグラフに反映されます（30〜60秒）。
         </p>
       ) : null}
 
@@ -122,22 +166,76 @@ export function GeoCompetitorSuggestions({
           <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-400">
             追跡中
           </p>
-          <div className="flex flex-wrap gap-2">
-            {tracked.map((name) => (
-              <span
-                key={name}
-                className="rounded-full bg-violet-100 px-3 py-1 text-sm font-medium text-violet-800"
+          <div className="space-y-2">
+            {tracked.map((competitor) => (
+              <div
+                key={competitor.trackedName}
+                className="rounded-lg bg-violet-50 px-3 py-2 ring-1 ring-violet-100"
               >
-                {name}
-              </span>
+                <p className="text-sm font-medium text-violet-800">{competitor.displayName}</p>
+                <p className="text-xs text-slate-500">
+                  Tracked: {competitor.trackedName}
+                  {competitor.domain ? ` · ${competitor.domain}` : ""}
+                </p>
+              </div>
             ))}
           </div>
         </div>
       ) : (
         <p className="mb-5 rounded-lg bg-slate-50 px-4 py-3 text-sm text-slate-600">
-          まだ競合が登録されていません。下の候補から Track するか、新規診断フォームで手動追加できます。
+          まだ競合が登録されていません。下のフォームから手動追加するか、Suggested Brands から Track してください。
         </p>
       )}
+
+      <form
+        onSubmit={(event) => void handleManualAdd(event)}
+        className="mb-6 rounded-xl border border-dashed border-violet-200 bg-violet-50/40 p-4"
+      >
+        <p className="mb-3 text-sm font-medium text-slate-800">競合を手動追加</p>
+        <div className="grid gap-3 sm:grid-cols-2">
+          <label className="space-y-2">
+            <span className="text-sm font-medium text-slate-700">Tracked Name *</span>
+            <Input
+              value={trackedName}
+              onChange={(event) => setTrackedName(event.target.value)}
+              placeholder="例：HubSpot"
+              required
+              disabled={!state?.canAddMore || adding}
+            />
+            <p className="text-xs text-slate-500">AI回答内で検索する最短の固有名</p>
+          </label>
+          <label className="space-y-2">
+            <span className="text-sm font-medium text-slate-700">Display Name *</span>
+            <Input
+              value={displayName}
+              onChange={(event) => setDisplayName(event.target.value)}
+              placeholder="例：HubSpot CRM"
+              required
+              disabled={!state?.canAddMore || adding}
+            />
+            <p className="text-xs text-slate-500">ダッシュボード上の表示名</p>
+          </label>
+          <label className="space-y-2 sm:col-span-2">
+            <span className="text-sm font-medium text-slate-700">Domain</span>
+            <Input
+              value={domain}
+              onChange={(event) => setDomain(event.target.value)}
+              placeholder="例：hubspot.com"
+              disabled={!state?.canAddMore || adding}
+            />
+          </label>
+        </div>
+        <div className="mt-3 flex justify-end">
+          <Button
+            type="submit"
+            disabled={!state?.canAddMore || adding || !trackedName.trim() || !displayName.trim()}
+            className="bg-violet-600 text-white hover:bg-violet-500"
+          >
+            {adding ? <Loader2 className="size-4 animate-spin" /> : <Plus className="size-4" />}
+            競合を追加
+          </Button>
+        </div>
+      </form>
 
       {suggestions.length > 0 ? (
         <div>

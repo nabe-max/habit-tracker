@@ -22,7 +22,6 @@ export function GeoScanPanel({ onMonitorStarted }: GeoScanPanelProps) {
   const [clientCategory, setClientCategory] = useState("");
   const [website, setWebsite] = useState("");
   const [location, setLocation] = useState("");
-  const [competitorsText, setCompetitorsText] = useState("");
   const [customPromptsText, setCustomPromptsText] = useState("");
   const [loading, setLoading] = useState(false);
   const [monitorLoading, setMonitorLoading] = useState(false);
@@ -37,7 +36,6 @@ export function GeoScanPanel({ onMonitorStarted }: GeoScanPanelProps) {
       clientCategory,
       website: isManual ? undefined : website,
       location,
-      competitorsText,
       customPromptsText: isManual ? customPromptsText : undefined,
     };
   }
@@ -217,14 +215,6 @@ export function GeoScanPanel({ onMonitorStarted }: GeoScanPanelProps) {
             </>
           )}
 
-          <label className="space-y-2 sm:col-span-2">
-            <span className="text-sm font-medium text-slate-700">競合（任意）</span>
-            <Input
-              value={competitorsText}
-              onChange={(e) => setCompetitorsText(e.target.value)}
-              placeholder="競合A、競合B"
-            />
-          </label>
         </div>
 
         <div className="mt-6 grid gap-3 sm:grid-cols-2">

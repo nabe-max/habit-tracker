@@ -2,14 +2,15 @@
 
 import { useMemo, useState } from "react";
 
-import type { GeoHistoryPoint, GeoPositionRanking } from "@/lib/geo/types";
+import type { GeoHistoryPoint, GeoPositionRanking, GeoTrackedCompetitor } from "@/lib/geo/types";
+import { getTrackedNames, resolveDisplayName } from "@/lib/geo/competitors";
 import { namesMatch } from "@/lib/geo/scoring";
 
 type Metric = "visibility" | "position";
 
 interface GeoMetricsChartProps {
   brandName: string;
-  trackedCompetitors: string[];
+  trackedCompetitors: GeoTrackedCompetitor[];
   runs: GeoHistoryPoint[];
   weekOverWeekDelta: number | null;
   positionWeekOverWeekDelta: number | null;
@@ -66,11 +67,11 @@ function getValueForBrand(
 
 function buildBrandList(
   brandName: string,
-  trackedCompetitors: string[],
+  trackedCompetitors: GeoTrackedCompetitor[],
   runs: GeoHistoryPoint[],
 ): string[] {
   const latest = runs[runs.length - 1];
-  const names = new Set<string>([brandName, ...trackedCompetitors]);
+  const names = new Set<string>([brandName, ...getTrackedNames(trackedCompetitors)]);
 
   for (const run of runs) {
     for (const entry of run.positionRankings) {
@@ -93,7 +94,7 @@ function buildBrandList(
 
 function buildSeries(
   brandName: string,
-  trackedCompetitors: string[],
+  trackedCompetitors: GeoTrackedCompetitor[],
   runs: GeoHistoryPoint[],
   metric: Metric,
 ): ChartSeries[] {
@@ -103,7 +104,7 @@ function buildSeries(
   const brands = buildBrandList(brandName, trackedCompetitors, sorted);
 
   return brands.map((name, index) => ({
-    name,
+    name: namesMatch(name, brandName) ? brandName : resolveDisplayName(name, trackedCompetitors),
     isClient: namesMatch(name, brandName),
     color: SERIES_COLORS[index % SERIES_COLORS.length],
     values: sorted.map((run) => getValueForBrand(run, name, brandName, metric)),
@@ -112,7 +113,7 @@ function buildSeries(
 
 function getLatestSnapshot(
   brandName: string,
-  trackedCompetitors: string[],
+  trackedCompetitors: GeoTrackedCompetitor[],
   runs: GeoHistoryPoint[],
 ) {
   const latest = runs[runs.length - 1];
@@ -123,7 +124,7 @@ function getLatestSnapshot(
     const isClient = namesMatch(name, brandName);
 
     return {
-      name,
+      name: isClient ? brandName : resolveDisplayName(name, trackedCompetitors),
       isClient,
       visibility: isClient ? latest.visibilityScore : (ranking?.rate ?? null),
       position: isClient ? latest.positionScore : (ranking?.avgPosition ?? null),

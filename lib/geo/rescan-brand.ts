@@ -11,6 +11,7 @@ export async function rescanGeoBrand(brandId: string): Promise<void> {
   if (!brand?.is_active) return;
 
   const manualOnly = isManualPromptBrand(brand);
+  const competitors = brand.competitors ?? [];
 
   const result = await runGeoScan(
     {
@@ -18,17 +19,12 @@ export async function rescanGeoBrand(brandId: string): Promise<void> {
       clientCategory: brand.client_category,
       location: brand.location ?? undefined,
       website: brand.website ?? undefined,
-      competitors: brand.competitors ?? [],
       customPrompts: brand.custom_prompts ?? [],
       manualOnly,
     },
-    { includeRecommendations: false },
+    { includeRecommendations: false, competitors },
   );
 
   await saveGeoScanRun(brandId, result);
-  await upsertCompetitorSuggestionsFromScan(
-    brandId,
-    brand.competitors ?? [],
-    result.suggestedCompetitors,
-  );
+  await upsertCompetitorSuggestionsFromScan(brandId, competitors, result.suggestedCompetitors);
 }

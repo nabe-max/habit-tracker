@@ -1,7 +1,16 @@
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 
-import { normalizeBrandKey, normalizeBrandName } from "@/lib/geo/brand-extraction";
-import { addCompetitor, canAddCompetitor, MAX_COMPETITORS, SUGGESTION_THRESHOLD } from "@/lib/geo/competitors";
+import { normalizeBrandName } from "@/lib/geo/brand-extraction";
+import {
+  addCompetitor,
+  canAddCompetitor,
+  getTrackedNames,
+  isSameBrand,
+  MAX_COMPETITORS,
+  parseTrackedCompetitors,
+  SUGGESTION_THRESHOLD,
+} from "@/lib/geo/competitors";
+import { isValidWebsite } from "@/lib/geo/registration";
 import { getGeoConfig, isGeoDbConfigured } from "@/lib/geo/env";
 import {
   buildDefaultGeoPrompts,
@@ -12,7 +21,13 @@ import {
   MIN_PROMPT_LENGTH,
   normalizePromptText,
 } from "@/lib/geo/prompts";
-import type { GeoCompetitorsResponse, GeoPromptsResponse, GeoScanResult, GeoSuggestedCompetitor } from "@/lib/geo/types";
+import type {
+  GeoCompetitorsResponse,
+  GeoPromptsResponse,
+  GeoScanResult,
+  GeoSuggestedCompetitor,
+  GeoTrackedCompetitor,
+} from "@/lib/geo/types";
 import { SCAN_INTERVAL_MS } from "@/lib/geo/scan-schedule";
 
 let client: SupabaseClient | null = null;
@@ -24,7 +39,7 @@ export interface GeoBrand {
   client_category: string;
   location: string | null;
   website: string | null;
-  competitors: string[];
+  competitors: GeoTrackedCompetitor[];
   custom_prompts: string[];
   is_active: boolean;
   last_scanned_at: string | null;
@@ -61,13 +76,19 @@ export function getGeoDb(): SupabaseClient {
   return client;
 }
 
+function normalizeGeoBrand(row: Record<string, unknown>): GeoBrand {
+  return {
+    ...(row as unknown as GeoBrand),
+    competitors: parseTrackedCompetitors(row.competitors),
+  };
+}
+
 export async function createGeoBrand(input: {
   viewToken: string;
   brandName: string;
   clientCategory: string;
   location?: string;
   website?: string;
-  competitors: string[];
   customPrompts?: string[];
 }): Promise<GeoBrand> {
   const db = getGeoDb();
@@ -79,21 +100,21 @@ export async function createGeoBrand(input: {
       client_category: input.clientCategory,
       location: input.location ?? null,
       website: input.website ?? null,
-      competitors: input.competitors,
+      competitors: [],
       custom_prompts: input.customPrompts ?? [],
     })
     .select("*")
     .single();
 
   if (error) throw error;
-  return data as GeoBrand;
+  return normalizeGeoBrand(data as Record<string, unknown>);
 }
 
 export async function getGeoBrandById(brandId: string): Promise<GeoBrand | null> {
   const db = getGeoDb();
   const { data, error } = await db.from("geo_brands").select("*").eq("id", brandId).maybeSingle();
   if (error) throw error;
-  return data as GeoBrand | null;
+  return data ? normalizeGeoBrand(data as Record<string, unknown>) : null;
 }
 
 export async function verifyGeoBrandAccess(
@@ -118,7 +139,8 @@ export async function listBrandsDueForScan(): Promise<GeoBrand[]> {
 
   if (error) throw error;
 
-  return ((data ?? []) as GeoBrand[])
+  return ((data ?? []) as Record<string, unknown>[])
+    .map(normalizeGeoBrand)
     .filter(
       (brand) =>
         !brand.last_scanned_at || new Date(brand.last_scanned_at).getTime() <= dueBefore,
@@ -199,16 +221,9 @@ export interface GeoCompetitorSuggestionRow {
   last_seen_at: string;
 }
 
-function isSameBrandName(a: string, b: string): boolean {
-  const left = normalizeBrandKey(a);
-  const right = normalizeBrandKey(b);
-  if (!left || !right) return false;
-  return left === right || left.includes(right) || right.includes(left);
-}
-
 export async function updateGeoBrandCompetitors(
   brandId: string,
-  competitors: string[],
+  competitors: GeoTrackedCompetitor[],
 ): Promise<GeoBrand> {
   const db = getGeoDb();
   const { data, error } = await db
@@ -219,16 +234,17 @@ export async function updateGeoBrandCompetitors(
     .single();
 
   if (error) throw error;
-  return data as GeoBrand;
+  return normalizeGeoBrand(data as Record<string, unknown>);
 }
 
 export async function upsertCompetitorSuggestionsFromScan(
   brandId: string,
-  trackedCompetitors: string[],
+  trackedCompetitors: GeoTrackedCompetitor[],
   scanSuggestions: GeoSuggestedCompetitor[],
 ): Promise<void> {
   if (scanSuggestions.length === 0) return;
 
+  const trackedNames = getTrackedNames(trackedCompetitors);
   const db = getGeoDb();
   const { data: existingRows, error } = await db
     .from("geo_competitor_suggestions")
@@ -241,10 +257,10 @@ export async function upsertCompetitorSuggestionsFromScan(
   const now = new Date().toISOString();
 
   for (const suggestion of scanSuggestions) {
-    if (trackedCompetitors.some((name) => isSameBrandName(name, suggestion.name))) continue;
+    if (trackedNames.some((name) => isSameBrand(name, suggestion.name))) continue;
 
     const matched = existing.find((row) =>
-      isSameBrandName(row.suggested_name, suggestion.name),
+      isSameBrand(row.suggested_name, suggestion.name),
     );
 
     if (matched?.status === "rejected" || matched?.status === "tracked") continue;
@@ -308,6 +324,43 @@ export async function getCompetitorsState(
   };
 }
 
+export async function addManualCompetitor(
+  brandId: string,
+  viewToken: string,
+  input: { trackedName: string; displayName: string; domain?: string },
+): Promise<GeoCompetitorsResponse | null> {
+  const brand = await verifyGeoBrandAccess(brandId, viewToken);
+  if (!brand) return null;
+
+  const trackedName = normalizeBrandName(input.trackedName);
+  const displayName = input.displayName.trim();
+  const domain = input.domain?.trim();
+
+  if (!trackedName) {
+    throw new Error("Tracked Nameを入力してください");
+  }
+  if (!displayName) {
+    throw new Error("Display Nameを入力してください");
+  }
+  if (domain && !isValidWebsite(domain)) {
+    throw new Error("ドメインの形式が正しくありません");
+  }
+
+  const competitor: GeoTrackedCompetitor = {
+    trackedName,
+    displayName,
+    domain: domain || undefined,
+  };
+
+  const nextCompetitors = addCompetitor(brand.competitors ?? [], competitor);
+  if (nextCompetitors.length === (brand.competitors ?? []).length) {
+    throw new Error("同じ競合が既に登録されているか、上限に達しています");
+  }
+
+  await updateGeoBrandCompetitors(brandId, nextCompetitors);
+  return getCompetitorsState(brandId);
+}
+
 export async function trackCompetitorSuggestion(
   brandId: string,
   viewToken: string,
@@ -319,7 +372,10 @@ export async function trackCompetitorSuggestion(
   const trimmed = normalizeBrandName(name);
   if (!trimmed) return null;
 
-  const nextCompetitors = addCompetitor(brand.competitors ?? [], trimmed);
+  const nextCompetitors = addCompetitor(brand.competitors ?? [], {
+    trackedName: trimmed,
+    displayName: trimmed,
+  });
   if (nextCompetitors.length === (brand.competitors ?? []).length) {
     return getCompetitorsState(brandId);
   }
@@ -333,7 +389,7 @@ export async function trackCompetitorSuggestion(
     .eq("brand_id", brandId);
 
   const matched = ((existingRows ?? []) as GeoCompetitorSuggestionRow[]).find((row) =>
-    isSameBrandName(row.suggested_name, trimmed),
+    isSameBrand(row.suggested_name, trimmed),
   );
 
   if (matched) {
@@ -477,7 +533,7 @@ export async function rejectCompetitorSuggestion(
     .eq("brand_id", brandId);
 
   const matched = ((existingRows ?? []) as GeoCompetitorSuggestionRow[]).find((row) =>
-    isSameBrandName(row.suggested_name, trimmed),
+    isSameBrand(row.suggested_name, trimmed),
   );
 
   if (matched) {
