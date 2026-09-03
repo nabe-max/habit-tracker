@@ -1,5 +1,6 @@
 import { runGeoScan } from "@/lib/geo/analyzer";
 import {
+  ensureActivePromptsForScan,
   getGeoBrandById,
   saveGeoScanRun,
   upsertCompetitorSuggestionsFromScan,
@@ -9,7 +10,7 @@ export async function rescanGeoBrand(brandId: string): Promise<void> {
   const brand = await getGeoBrandById(brandId);
   if (!brand?.is_active) return;
 
-  const activePrompts = brand.custom_prompts ?? [];
+  const activePrompts = await ensureActivePromptsForScan(brandId);
   if (activePrompts.length === 0) return;
 
   const competitors = brand.competitors ?? [];

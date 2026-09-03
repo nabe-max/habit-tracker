@@ -18,6 +18,7 @@ import {
   MAX_PROMPT_LENGTH,
   MIN_PROMPT_LENGTH,
   normalizePromptText,
+  buildLegacyDefaultPrompts,
 } from "@/lib/geo/prompts";
 import { generatePromptSuggestions } from "@/lib/geo/prompt-suggestions";
 import type {
@@ -516,6 +517,52 @@ export async function generatePromptSuggestionsForBrand(brandId: string): Promis
   }
 
   return buildPromptsResponse(brand);
+}
+
+/** custom_prompts が空の既存ブランド向け。AI提案を保存し、失敗時は旧標準6件で復旧する */
+export async function ensureActivePromptsForScan(brandId: string): Promise<string[]> {
+  const brand = await getGeoBrandById(brandId);
+  if (!brand) return [];
+
+  const existing = brand.custom_prompts ?? [];
+  if (existing.length > 0) return existing;
+
+  let prompts: string[] = [];
+
+  try {
+    prompts = await generatePromptSuggestions({
+      brandName: brand.brand_name,
+      clientCategory: brand.client_category,
+      location: brand.location ?? undefined,
+      website: brand.website ?? undefined,
+    });
+  } catch (error) {
+    console.error(`[ensureActivePromptsForScan] brand=${brandId} AI generation failed`, error);
+  }
+
+  if (prompts.length === 0) {
+    prompts = buildLegacyDefaultPrompts({
+      brandName: brand.brand_name,
+      clientCategory: brand.client_category,
+      location: brand.location ?? undefined,
+    });
+  }
+
+  if (prompts.length === 0) return [];
+
+  const db = getGeoDb();
+  const { error } = await db
+    .from("geo_brands")
+    .update({ custom_prompts: prompts.slice(0, MAX_CUSTOM_PROMPTS) })
+    .eq("id", brandId);
+
+  if (error) throw error;
+
+  console.info(
+    `[ensureActivePromptsForScan] brand=${brandId} bootstrapped ${prompts.length} prompts`,
+  );
+
+  return prompts.slice(0, MAX_CUSTOM_PROMPTS);
 }
 
 export async function getPromptsState(brandId: string): Promise<GeoPromptsResponse> {
