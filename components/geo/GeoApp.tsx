@@ -8,6 +8,7 @@ import { GeoClientList } from "@/components/geo/GeoClientList";
 import { GeoDashboard } from "@/components/geo/GeoDashboard";
 import { GeoPromptsPanel } from "@/components/geo/GeoPromptsPanel";
 import { GeoScanPanel } from "@/components/geo/GeoScanPanel";
+import { MAX_MONITORED_CLIENTS } from "@/lib/geo/limits";
 import type { GeoMonitorClient } from "@/lib/geo/types";
 import {
   clearActiveClientId,
@@ -124,9 +125,14 @@ export function GeoApp() {
             </nav>
 
             <div className="mt-8">
-              <p className="mb-2 px-3 text-xs font-semibold uppercase tracking-wide text-slate-400">
-                監視中クライアント
-              </p>
+              <div className="mb-2 flex items-center justify-between px-3">
+                <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">
+                  監視中クライアント
+                </p>
+                <p className="text-xs text-slate-400">
+                  {clients.length}/{MAX_MONITORED_CLIENTS}
+                </p>
+              </div>
               {clients.length === 0 ? (
                 <p className="px-3 text-xs text-slate-400">まだありません</p>
               ) : (
@@ -190,7 +196,7 @@ export function GeoApp() {
               deleting={deletingId === activeClient?.brandId}
             />
           ) : (
-            <GeoScanPanel onMonitorStarted={handleMonitorStarted} />
+            <GeoScanPanel monitoredClients={clients} onMonitorStarted={handleMonitorStarted} />
           )}
         </main>
       </div>
@@ -212,6 +218,7 @@ export function GeoAppHero() {
         <p className="mt-2 max-w-2xl text-sm text-slate-600">
           概要でグラフと競合比較、プロンプトで回答詳細を確認。新規診断からクライアント追加と毎日監視を開始。
         </p>
+        <p className="mt-2 text-xs text-violet-600">β版 · 監視クライアント最大{MAX_MONITORED_CLIENTS}社まで無料</p>
       </div>
     </section>
   );

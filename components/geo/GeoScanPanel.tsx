@@ -9,14 +9,24 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import type { GeoMonitorClient, GeoScanResult } from "@/lib/geo/types";
-import type { GeoSetupMode } from "@/lib/geo/registration";
+import {
+  parseGeoRegistration,
+  validateGeoRegistration,
+  type GeoSetupMode,
+} from "@/lib/geo/registration";
+import {
+  canAddMonitorClient,
+  getMonitorClientLimitMessage,
+  MAX_MONITORED_CLIENTS,
+} from "@/lib/geo/limits";
 import { saveMonitorClient } from "@/lib/geo/storage";
 
 interface GeoScanPanelProps {
+  monitoredClients: GeoMonitorClient[];
   onMonitorStarted: (client: GeoMonitorClient) => void;
 }
 
-export function GeoScanPanel({ onMonitorStarted }: GeoScanPanelProps) {
+export function GeoScanPanel({ monitoredClients, onMonitorStarted }: GeoScanPanelProps) {
   const [setupMode, setSetupMode] = useState<GeoSetupMode>("domain");
   const [brandName, setBrandName] = useState("");
   const [clientCategory, setClientCategory] = useState("");
@@ -28,6 +38,9 @@ export function GeoScanPanel({ onMonitorStarted }: GeoScanPanelProps) {
   const [result, setResult] = useState<GeoScanResult | null>(null);
 
   const isManual = setupMode === "manual";
+  const monitorCount = monitoredClients.length;
+  const atMonitorLimit = !canAddMonitorClient(monitorCount);
+  const monitorLimitMessage = getMonitorClientLimitMessage(monitorCount);
 
   function buildPayload() {
     return {
@@ -40,8 +53,26 @@ export function GeoScanPanel({ onMonitorStarted }: GeoScanPanelProps) {
     };
   }
 
-  async function handleScan(event: React.FormEvent) {
-    event.preventDefault();
+  function validateForm(): string | null {
+    return validateGeoRegistration(parseGeoRegistration(buildPayload()));
+  }
+
+  function resetForm() {
+    setBrandName("");
+    setClientCategory("");
+    setWebsite("");
+    setLocation("");
+    setCustomPromptsText("");
+    setResult(null);
+  }
+
+  async function handleScan() {
+    const validationError = validateForm();
+    if (validationError) {
+      toast.error(validationError);
+      return;
+    }
+
     setLoading(true);
     setResult(null);
 
@@ -67,13 +98,27 @@ export function GeoScanPanel({ onMonitorStarted }: GeoScanPanelProps) {
   }
 
   async function handleStartMonitor() {
+    const validationError = validateForm();
+    if (validationError) {
+      toast.error(validationError);
+      return;
+    }
+
+    if (monitorLimitMessage) {
+      toast.error(monitorLimitMessage);
+      return;
+    }
+
     setMonitorLoading(true);
 
     try {
       const res = await fetch("/api/geo/monitor", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(buildPayload()),
+        body: JSON.stringify({
+          ...buildPayload(),
+          existingBrandIds: monitoredClients.map((client) => client.brandId),
+        }),
       });
 
       const data = (await res.json()) as {
@@ -98,6 +143,7 @@ export function GeoScanPanel({ onMonitorStarted }: GeoScanPanelProps) {
 
       saveMonitorClient(client);
       onMonitorStarted(client);
+      resetForm();
       toast.success("毎日監視を開始しました。Overviewタブで確認できます");
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "監視の開始に失敗しました");
@@ -114,9 +160,18 @@ export function GeoScanPanel({ onMonitorStarted }: GeoScanPanelProps) {
         <p className="mt-1 text-sm text-slate-500">
           1回診断するか、毎日監視を開始してOverviewダッシュボードに追加します。
         </p>
+        <p className="mt-2 text-xs text-slate-500">
+          β版: 監視クライアント {monitorCount}/{MAX_MONITORED_CLIENTS}社
+        </p>
       </div>
 
-      <form onSubmit={handleScan} className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+      {atMonitorLimit ? (
+        <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+          {monitorLimitMessage}
+        </div>
+      ) : null}
+
+      <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
         <div className="mb-6 flex items-center gap-3">
           <div className="flex size-11 items-center justify-center rounded-xl bg-violet-100 text-violet-700">
             <Search className="size-5" />
@@ -161,7 +216,6 @@ export function GeoScanPanel({ onMonitorStarted }: GeoScanPanelProps) {
               value={brandName}
               onChange={(event) => setBrandName(event.target.value)}
               placeholder="例：株式会社〇〇"
-              required
             />
           </label>
           <label className="space-y-2">
@@ -170,7 +224,6 @@ export function GeoScanPanel({ onMonitorStarted }: GeoScanPanelProps) {
               value={clientCategory}
               onChange={(event) => setClientCategory(event.target.value)}
               placeholder="例：税理士、SaaS"
-              required
             />
           </label>
 
@@ -182,7 +235,6 @@ export function GeoScanPanel({ onMonitorStarted }: GeoScanPanelProps) {
                   value={location}
                   onChange={(e) => setLocation(e.target.value)}
                   placeholder="例：大阪、全国"
-                  required
                 />
               </label>
               <label className="space-y-2 sm:col-span-2">
@@ -192,7 +244,6 @@ export function GeoScanPanel({ onMonitorStarted }: GeoScanPanelProps) {
                   onChange={(e) => setCustomPromptsText(e.target.value)}
                   placeholder={"1行に1件ずつ入力\n例：大阪でおすすめの税理士を教えて\n例：梅田周辺で評判のいい税理士は？"}
                   rows={5}
-                  required
                 />
                 <p className="text-xs text-slate-500">公式サイトがない場合は、監視したい質問を手入力してください（最大10件）</p>
               </label>
@@ -205,7 +256,6 @@ export function GeoScanPanel({ onMonitorStarted }: GeoScanPanelProps) {
                   value={website}
                   onChange={(e) => setWebsite(e.target.value)}
                   placeholder="https://..."
-                  required
                 />
               </label>
               <label className="space-y-2">
@@ -227,14 +277,19 @@ export function GeoScanPanel({ onMonitorStarted }: GeoScanPanelProps) {
         </div>
 
         <div className="mt-6 grid gap-3 sm:grid-cols-2">
-          <Button type="submit" disabled={loading || monitorLoading} className="bg-violet-600 text-white hover:bg-violet-500">
+          <Button
+            type="button"
+            disabled={loading || monitorLoading}
+            onClick={() => void handleScan()}
+            className="bg-violet-600 text-white hover:bg-violet-500"
+          >
             {loading ? <Loader2 className="size-4 animate-spin" /> : <Sparkles className="size-4" />}
             {loading ? "診断中…" : "1回診断する"}
           </Button>
           <Button
             type="button"
             variant="outline"
-            disabled={loading || monitorLoading}
+            disabled={loading || monitorLoading || atMonitorLimit}
             onClick={() => void handleStartMonitor()}
             className="border-violet-200 text-violet-700 hover:bg-violet-50"
           >
@@ -242,7 +297,7 @@ export function GeoScanPanel({ onMonitorStarted }: GeoScanPanelProps) {
             {monitorLoading ? "開始中…" : "毎日監視を開始 → Overviewへ"}
           </Button>
         </div>
-      </form>
+      </div>
 
       {result ? <GeoScanResults result={result} /> : null}
     </div>

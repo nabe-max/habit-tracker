@@ -1,4 +1,7 @@
+import { canAddMonitorClient, MAX_MONITORED_CLIENTS } from "@/lib/geo/limits";
 import type { GeoMonitorClient } from "@/lib/geo/types";
+
+export { MAX_MONITORED_CLIENTS, canAddMonitorClient };
 
 const CLIENTS_KEY = "geo_monitor_clients";
 const ACTIVE_CLIENT_KEY = "geo_active_client_id";
@@ -16,7 +19,12 @@ export function loadMonitorClients(): GeoMonitorClient[] {
 }
 
 export function saveMonitorClient(client: GeoMonitorClient): GeoMonitorClient[] {
-  const existing = loadMonitorClients().filter((item) => item.brandId !== client.brandId);
+  const current = loadMonitorClients();
+  const existing = current.filter((item) => item.brandId !== client.brandId);
+  const isNew = !current.some((item) => item.brandId === client.brandId);
+  if (isNew && !canAddMonitorClient(current.length)) {
+    return current;
+  }
   const next = [client, ...existing];
   localStorage.setItem(CLIENTS_KEY, JSON.stringify(next));
   return next;

@@ -11,6 +11,7 @@ import {
 } from "@/lib/geo/db";
 import { isGeoDbConfigured } from "@/lib/geo/env";
 import { formatGeoServiceError } from "@/lib/geo/errors";
+import { getMonitorClientLimitMessage } from "@/lib/geo/limits";
 import type { GeoScanRequest, GeoScanResult } from "@/lib/geo/types";
 import {
   parseGeoRegistration,
@@ -35,7 +36,16 @@ export async function POST(req: Request) {
     const body = (await req.json()) as Partial<GeoScanRequest> & {
       setupMode?: "domain" | "manual";
       customPromptsText?: string;
+      existingBrandIds?: string[];
     };
+
+    const existingBrandIds = Array.isArray(body.existingBrandIds)
+      ? body.existingBrandIds.filter((id): id is string => typeof id === "string" && id.length > 0)
+      : [];
+    const limitMessage = getMonitorClientLimitMessage(existingBrandIds.length);
+    if (limitMessage) {
+      return NextResponse.json({ error: limitMessage }, { status: 403 });
+    }
 
     const registration = parseGeoRegistration(body);
     const validationError = validateGeoRegistration(registration);
