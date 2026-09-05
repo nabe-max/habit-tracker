@@ -3,13 +3,12 @@ import type { Metadata } from "next";
 import { GeoLandingPage } from "@/components/lp/GeoLandingPage";
 
 export const metadata: Metadata = {
-  title: "GEO Lab | 代理店向け AI検索可視化ツール",
+  title: "GEO Lab | マーケティング向け AI検索分析",
   description:
-    "ChatGPTの回答でクライアントが何位に出るかを可視化。SEO・Web集客代行の代理店向け。β版・最大3クライアント無料。",
+    "AI検索で競合よりも優位性を得よう。ChatGPT等の回答可視性を分析。β版・最大3クライアント無料。",
   openGraph: {
-    title: "GEO Lab | 代理店向け AI検索可視化",
-    description:
-      "クライアントのAI検索可視性を毎日モニタリング。SEO代理店向けダッシュボード。",
+    title: "GEO Lab | マーケティング向け AI検索分析",
+    description: "AI検索で競合よりも優位性を得よう。",
   },
 };
 

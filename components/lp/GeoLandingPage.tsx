@@ -135,14 +135,11 @@ export function GeoLandingPage() {
               For SEO & Marketing Agencies
             </div>
             <h1 className="mt-6 text-3xl font-bold tracking-tight text-slate-900 sm:text-5xl sm:leading-tight">
-              クライアントのAI検索可視性を、
-              <br className="hidden sm:block" />
-              <span className="text-violet-600">毎日モニタリング</span>
+              マーケティングには
+              <span className="text-violet-600">AI検索分析</span>
             </h1>
             <p className="mx-auto mt-5 max-w-2xl text-base leading-relaxed text-slate-600 sm:text-lg">
-              ChatGPTの回答で、クライアントが何位に出るか。
-              <br className="hidden sm:block" />
-              SEO・Web集客代行の代理店向けダッシュボード。
+              AI検索で競合よりも優位性を得よう
             </p>
             <div className="mt-8 flex flex-col items-center gap-3 sm:flex-row sm:justify-center">
               <Button asChild size="lg" className="bg-violet-600 px-8 text-white hover:bg-violet-500">
