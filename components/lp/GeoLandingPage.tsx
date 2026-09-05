@@ -215,7 +215,7 @@ export function GeoLandingPage() {
                 診断から毎日監視まで、1つの画面で
               </h2>
               <p className="mt-2 text-sm text-slate-500">
-                ※ デモ診断のスクリーンショットです。企業名はモザイク処理しています。
+                ※ デモ診断のサンプル画面です。掲載企業との提携関係はありません。
               </p>
             </div>
 
@@ -272,7 +272,7 @@ export function GeoLandingPage() {
       <footer className="border-t border-slate-200 bg-white px-4 py-8 sm:px-6">
         <div className="mx-auto flex max-w-6xl flex-col gap-2 text-xs text-slate-500 sm:flex-row sm:items-center sm:justify-between">
           <p>© {new Date().getFullYear()} GEO Lab</p>
-          <p>画面はデモ診断の結果です。企業名はモザイク処理しています。</p>
+          <p>画面はデモ診断のサンプルです。掲載企業との提携関係はありません。</p>
         </div>
       </footer>
     </div>
