@@ -62,18 +62,24 @@ const SCREENSHOTS = [
     title: "概要 — 可視性スコアと競合比較",
     src: "/lp/overview.png",
     alt: "GEO Lab 概要画面。可視性スコア67、競合比較グラフ、言及率を表示",
+    width: 1024,
+    height: 560,
     priority: true,
   },
   {
     title: "プロンプト — AI回答の言及状況と改善アクション",
     src: "/lp/prompts.png",
     alt: "GEO Lab プロンプト監視画面。プロンプト別の言及有無、AI回答抜粋、改善アクション提案を表示",
+    width: 1024,
+    height: 593,
     priority: false,
   },
   {
     title: "新規診断 — クライアント登録と1回診断",
     src: "/lp/scan.png",
     alt: "GEO Lab 新規診断画面。クライアント名・業種・Webサイト・監視プロンプトを入力して診断または毎日監視を開始できる",
+    width: 1024,
+    height: 597,
     priority: false,
   },
 ] as const;
@@ -82,11 +88,15 @@ function ScreenshotFigure({
   title,
   src,
   alt,
+  width,
+  height,
   priority,
 }: {
   title: string;
   src: string;
   alt: string;
+  width: number;
+  height: number;
   priority?: boolean;
 }) {
   return (
@@ -96,8 +106,10 @@ function ScreenshotFigure({
         <Image
           src={src}
           alt={alt}
-          width={1440}
-          height={900}
+          width={width}
+          height={height}
+          unoptimized
+          sizes="(max-width: 1152px) 100vw, 1152px"
           className="h-auto w-full"
           priority={priority}
         />
@@ -158,6 +170,8 @@ export function GeoLandingPage() {
                 alt="GEO Lab 概要ダッシュボードのデモ画面"
                 width={1024}
                 height={560}
+                unoptimized
+                sizes="(max-width: 1024px) 100vw, 1024px"
                 className="h-auto w-full"
                 priority
               />
